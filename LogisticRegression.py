@@ -25,7 +25,7 @@ class LogisticRegression:
 	# __ALPHA = 0.00001			# works for large dataset, 1 label
 	#__ALPHA = 0.000001			# works for large dataset, 400 labels, SLOWLY
 	# __ALPHA = 0.003
-	__ALPHA = 0.01
+	__ALPHA = 0.003
 	# __SIGMOID = np.vectorize(lambda x: 1 / (1 + math.exp(-x)))
 	__SIGMOID = np.vectorize(lambda x: 1 / (1 + ft_exp(-x)))
 	__PREDICT = np.vectorize(lambda x : 1 if x > 0 else 0)
@@ -49,12 +49,12 @@ class LogisticRegression:
 		self.__X[:, 0] = (self.__X[:, 0] - 3) / 4		# feature scaling: delta_scaled = (delta - 3) / 4
 		self.__X = np.c_[np.ones(self.__m), self.__X]	# add column of 1s
 
-		self.__Y = all_data[:, 1:401]					# grab start cells in index 1 - 400
-		self.__theta = np.zeros((402, 400))
+		# self.__Y = all_data[:, 1:401]					# grab start cells in index 1 - 400
+		# self.__theta = np.zeros((402, 400))
 
-		# self.__Y = all_data[:, 1]						# grab start cells in index 1
-		# self.__Y = self.__Y.reshape(self.__Y.shape[0], 1)
-		# self.__theta = np.zeros((402, 1))
+		self.__Y = all_data[:, 1]						# grab start cells in index 1
+		self.__Y = self.__Y.reshape(self.__Y.shape[0], 1)
+		self.__theta = np.zeros((402, 1))
 
 		# print(all_data.shape)
 		# print('m = ', self.__m)
@@ -80,7 +80,6 @@ class LogisticRegression:
 	def __run_gradient_descent(self, is_batch):
 		self.__iteration = 0
 		
-
 		is_mini_batch = True
 
 		if is_batch:
@@ -148,15 +147,15 @@ class LogisticRegression:
 			(1 - y_batch) * (np.log(self.__SIGMOID(1 - (x_batch @ self.__theta))))))
 
 	def __count_correct_predictions(self):
-		predictions = self.__PREDICT(self.__X @ self.__theta)
-		num_correct_per_row = np.sum(np.equal(predictions, self.__Y), axis=1)
-		num_correct = (num_correct_per_row == 400).sum()
-		return num_correct
-
 		# predictions = self.__PREDICT(self.__X @ self.__theta)
 		# num_correct_per_row = np.sum(np.equal(predictions, self.__Y), axis=1)
-		# num_correct = (num_correct_per_row == 1).sum()
+		# num_correct = (num_correct_per_row == 400).sum()
 		# return num_correct
+
+		predictions = self.__PREDICT(self.__X @ self.__theta)
+		num_correct_per_row = np.sum(np.equal(predictions, self.__Y), axis=1)
+		num_correct = (num_correct_per_row == 1).sum()
+		return num_correct
 		
 
 		# print('predictions.shape = ', predictions.shape)
