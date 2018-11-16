@@ -24,22 +24,21 @@ class LogisticRegression:
 	__N = 402
 	# __ALPHA = 0.00001			# works for large dataset, 1 label
 	#__ALPHA = 0.000001			# works for large dataset, 400 labels, SLOWLY
-	__ALPHA = 0.003
-	# __ALPHA = 0.001
+	# __ALPHA = 0.003
+	__ALPHA = 0.01
 	# __SIGMOID = np.vectorize(lambda x: 1 / (1 + math.exp(-x)))
 	__SIGMOID = np.vectorize(lambda x: 1 / (1 + ft_exp(-x)))
 	__PREDICT = np.vectorize(lambda x : 1 if x > 0 else 0)
+	__BATCH_SIZE = 100
 	
 	def __init__(self):
 		pass
 
 	def train(self, filename):
-		print('begin parsing...')
+		print('parsing...')
 		parser = TrainingDataParser(filename)
 
-		print('finished parsing...')
-
-
+		print('data wrangling...')
 		all_data = np.array(parser.data, dtype=float)
 
 		self.__m = all_data.shape[0]
@@ -63,54 +62,69 @@ class LogisticRegression:
 		# print('Y.shape = ', self.__Y.shape)
 		# print('theta.shape = ', self.__theta.shape)
 
-		# self.__run_gradient_descent(is_batch=True)
-		self.__run_gradient_descent(is_batch=False)
+		self.__run_gradient_descent(is_batch=True)
+		# self.__run_gradient_descent(is_batch=False)
 
 		print('DONE LOL')
 
+	def	__select_x_y_batch(self):
+		if self.__m > self.__BATCH_SIZE:
+			indices = np.arange(self.__m)
+			indices = np.random.permutation(indices)[:self.__BATCH_SIZE]
+			x_batch = self.__X[indices, :]
+			y_batch = self.__Y[indices, :]
+			return x_batch, y_batch
+		else:
+			return self.__X, self.__Y
+
 	def __run_gradient_descent(self, is_batch):
 		self.__iteration = 0
-		cost = self.__compute_cost()
+		
+
+		is_mini_batch = True
 
 		if is_batch:
-			print('running BATCH gradient descent...')
-			while True:
-				self.__iteration += 1
+			if is_mini_batch:
+				print('running MINI-BATCH gradient descent...')
+				for i in range(1000):
+					self.__iteration += 1
+					x_batch, y_batch = self.__select_x_y_batch()
+					self.__theta = self.__theta - self.__ALPHA * x_batch.T @ (self.__SIGMOID(x_batch @ self.__theta) - y_batch)
+					cost = self.__compute_cost_batch(x_batch, y_batch)
+					# print('iteration = %d, cost = %f, correct = %d / %d' % (self.__iteration, cost, self.__count_correct_predictions(), self.__m))
+					print('iteration = %d, cost = %f' % (self.__iteration, cost))
 
-				self.__theta = self.__theta - self.__ALPHA * self.__X.T @ (self.__SIGMOID(self.__X @ self.__theta) - self.__Y)
-
-				old_cost = cost
-				cost = self.__compute_cost()
-
-				if cost > old_cost:
-					raise LogisticRegressionException('learning rate is too high')
-				if abs(cost - old_cost) < 1e-6:
-					break
-
-				# print('iteration = %d, cost = %f' % (self.__iteration, ', cost = ', cost))
 				print('iteration = %d, cost = %f, correct = %d / %d' % (self.__iteration, cost, self.__count_correct_predictions(), self.__m))
+			else:
+				print('running FULL BATCH gradient descent...')
+				cost = self.__compute_cost()
+				while True:
+					self.__iteration += 1
+					self.__theta = self.__theta - self.__ALPHA * self.__X.T @ (self.__SIGMOID(self.__X @ self.__theta) - self.__Y)
+					old_cost = cost
+					cost = self.__compute_cost()
+					if cost > old_cost:
+						raise LogisticRegressionException('learning rate is too high')
+					if abs(cost - old_cost) < 1e-6:
+						break
+					# print('iteration = %d, cost = %f' % (self.__iteration, cost))
+					print('iteration = %d, cost = %f, correct = %d / %d' % (self.__iteration, cost, self.__count_correct_predictions(), self.__m))
 
 		else:
 			print('running ONLINE gradient descent...')
 			# while True:
 			for i in range(20):
 				self.__iteration += 1
+				cost = self.__compute_cost()
 
 				for i in range(self.__m):
 					x_row = self.__X[i, :]
 					y_row = self.__Y[i, :]
 					x_row = x_row.reshape(1, x_row.shape[0])
 					y_row = y_row.reshape(1, y_row.shape[0])
-
-					# print('x_row.shape = ', x_row.shape)
-					# print('y_row.shape = ', y_row.shape)
-					# print('theta.shape = ', self.__theta.shape)
-
 					self.__theta = self.__theta - self.__ALPHA * x_row.T @ (self.__SIGMOID(x_row @ self.__theta) - y_row)
-
-					# print('iteration %d, row %d, cost = %f' % (self.__iteration, i, self.__compute_cost_fast(x_row, y_row)))
+					# print('iteration %d, row %d, cost = %f' % (self.__iteration, i, self.__compute_cost_batch(x_row, y_row)))
 					# print('iteration %d, row %d' % (self.__iteration, i))
-
 				old_cost = cost
 				cost = self.__compute_cost()
 
@@ -122,47 +136,16 @@ class LogisticRegression:
 				# print('iteration = %d, cost = %f' % (self.__iteration, ', cost = ', cost))
 				print('iteration = %d, cost = %f, correct = %d / %d' % (self.__iteration, cost, self.__count_correct_predictions(), self.__m))
 
-
-			# print('running ONLINE gradient descent...')
-			# while True:
-			# 	self.__iteration += 1
-
-			# 	for i in range(self.__m):
-			# 		x_row = self.__X[i, :]
-			# 		y_row = self.__Y[i, :]
-			# 		x_row = x_row.reshape(1, x_row.shape[0])
-			# 		y_row = y_row.reshape(1, y_row.shape[0])
-
-			# 		# print('x_row.shape = ', x_row.shape)
-			# 		# print('y_row.shape = ', y_row.shape)
-			# 		# print('theta.shape = ', self.__theta.shape)
-
-			# 		self.__theta = self.__theta - self.__ALPHA * x_row.T @ (self.__SIGMOID(x_row @ self.__theta) - y_row)
-
-			# 		# print('iteration %d, row %d, cost = %f' % (self.__iteration, i, self.__compute_cost()))
-			# 		# print('iteration %d, row %d' % (self.__iteration, i))
-
-			# 	old_cost = cost
-			# 	cost = self.__compute_cost()
-
-			# 	if cost > old_cost:
-			# 		raise LogisticRegressionException('learning rate is too high')
-			# 	if abs(cost - old_cost) < 1e-6:
-			# 		break
-
-			# 	# print('iteration = %d, cost = %f' % (self.__iteration, ', cost = ', cost))
-			# 	print('iteration = %d, cost = %f, correct = %d / %d' % (self.__iteration, cost, self.__count_correct_predictions(), self.__m))
-
-
 	def __compute_cost(self):
 		return 1 / self.__m * np.sum(np.sum(
 			-self.__Y * np.log(self.__SIGMOID(self.__X @ self.__theta)) -
 			(1 - self.__Y) * (np.log(self.__SIGMOID(1 - (self.__X @ self.__theta))))))
 
-	def __compute_cost_fast(self, x_row, y_row):
-		return 1 / self.__m * np.sum(np.sum(
-			-y_row * np.log(self.__SIGMOID(x_row @ self.__theta)) -
-			(1 - y_row) * (np.log(self.__SIGMOID(1 - (x_row @ self.__theta))))))
+	def __compute_cost_batch(self, x_batch, y_batch):
+		batch_size = x_batch.shape[0]
+		return 1 / batch_size * np.sum(np.sum(
+			-y_batch * np.log(self.__SIGMOID(x_batch @ self.__theta)) -
+			(1 - y_batch) * (np.log(self.__SIGMOID(1 - (x_batch @ self.__theta))))))
 
 	def __count_correct_predictions(self):
 		predictions = self.__PREDICT(self.__X @ self.__theta)
