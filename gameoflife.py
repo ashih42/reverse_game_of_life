@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 
 """
 TODO:
@@ -30,6 +28,7 @@ run:
 
 """
 
+
 class GameOfLife():
 
     def __init__(self, board=np.array([]), board_size=20, border_size=20):
@@ -46,6 +45,8 @@ class GameOfLife():
             end = self.board_size - start
             self.board[start:end, start:end] = board.copy()
             self.border_size = border_size
+        self.start = self.border_size
+        self.end = self.board_size - self.start
 
     def __neighboring_cells(self, x, y):
         result = 0
@@ -67,6 +68,11 @@ class GameOfLife():
         self.board[y+2][x+1] = 1
         self.board[y+2][x+2] = 1
 
+    def get_limited_board(self):
+        start = self.border_size
+        end = self.board_size - start
+        return self.board[start:end, start:end]
+
     def run(self, save_anim=False, visual=True, epochs=-1, print_end_state=False):
         #for i in range(self.board_size):
         #    for j in range(self.board_size):
@@ -74,7 +80,12 @@ class GameOfLife():
         
         #self.place_glider(self.board_size // 2, self.board_size // 2)
 
+        starting_board = self.get_limited_board().copy()
+
         if visual:
+            import matplotlib.pyplot as plt
+            import matplotlib.animation as animation
+
             fig, ax = plt.subplots()
             plt.axis('off')
             self.img = ax.imshow(self.board)
@@ -94,10 +105,12 @@ class GameOfLife():
                 self.__update(i, display=False)
         
         if print_end_state:
-            start = self.border_size
-            end = self.board_size - start
-            for i in self.board[start:end, start:end]:
+            for i in self.get_limited_board():
                 print(i)
+        
+        end_board = self.get_limited_board().copy()
+
+        return starting_board, end_board
         
     def __update(self, frame, display=True):
         next_board = self.board.copy()
@@ -110,21 +123,31 @@ class GameOfLife():
                 else:
                     if neighbors == 3:
                         next_board[j][i] = 1
+        self.board[:] = next_board[:]
         if display:
-            start = self.border_size
-            end = self.board_size - start
-            self.img.set_data(self.board[start:end, start:end])
-            self.board[:] = next_board[:]
+            self.img.set_data(self.get_limited_board())
             return self.img,
 
 def main():
     board_i = np.array([
-        [1, 1, 1],
-        [1, 0, 1],
-        [1, 1, 0]
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     ])
-    gof = GameOfLife()
-    gof.run(print_end_state=True, visual=True, epochs=-1)
+    gof = GameOfLife(board=board_i)
+    start, end = gof.run(visual=False, epochs=1)
+    for i in start:
+        print(i)
+    print('\n')
+    for i in end:
+        print(i)
 
 if __name__ == '__main__':
     main()
