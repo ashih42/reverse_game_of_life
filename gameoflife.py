@@ -21,10 +21,10 @@ init:
     border_size: The amount of area outside of the visible board in all directions.
 
 run:
+    Returns a touple of the board represented as an array at the start and at endsssssss
     save_anim: Saves the animation as a HTML document with a folder of pictures corresponding to each frame of the animation
     visual: Displays an animation depicting the game of life playing out
     epochs: Amount of epochs to run the game of life program before returning
-    print_end_state: Prints the board and the end of the epochs
 
 """
 
@@ -57,29 +57,12 @@ class GameOfLife():
                         result += self.board[x + i][y + j]
         return result
 
-    def place_glider(self, x, y):
-        self.board[y][x] = 0
-        self.board[y][x+1] = 1
-        self.board[y][x+2] = 0
-        self.board[y+1][x] = 0
-        self.board[y+1][x+1] = 0
-        self.board[y+1][x+2] = 1
-        self.board[y+2][x] = 1
-        self.board[y+2][x+1] = 1
-        self.board[y+2][x+2] = 1
-
     def get_limited_board(self):
         start = self.border_size
         end = self.board_size - start
         return self.board[start:end, start:end]
 
-    def run(self, save_anim=False, visual=True, epochs=-1, print_end_state=False):
-        #for i in range(self.board_size):
-        #    for j in range(self.board_size):
-        #        self.board[j][i] = 0
-        
-        #self.place_glider(self.board_size // 2, self.board_size // 2)
-
+    def run(self, save_anim=False, visual=False, epochs=-1):
         starting_board = self.get_limited_board().copy()
 
         if visual:
@@ -104,10 +87,6 @@ class GameOfLife():
             for i in range(epochs):
                 self.__update(i, display=False)
         
-        if print_end_state:
-            for i in self.get_limited_board():
-                print(i)
-        
         end_board = self.get_limited_board().copy()
 
         return starting_board, end_board
@@ -130,24 +109,38 @@ class GameOfLife():
 
 def main():
     board_i = np.array([
-        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-        [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     ])
-    gof = GameOfLife(board=board_i)
-    start, end = gof.run(visual=False, epochs=1)
-    for i in start:
-        print(i)
-    print('\n')
-    for i in end:
-        print(i)
+    gof = GameOfLife(board=board_i, border_size=20)
+    gof.run(visual=True)
+    #for i in range(100):
+    #    print(i)
+    #    start, end = gof.run(visual=False, epochs=i)
+    #for i in start:
+    #    print(i)
+    #print('\n')
+    #    for i in end:
+    #        print(i)
+    #    print('\n')
 
 if __name__ == '__main__':
     main()
