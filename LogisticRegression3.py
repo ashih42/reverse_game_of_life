@@ -11,8 +11,19 @@ n = number of features				= 401 + 1
 '''
 
 '''
-This class tries to solve an independent model for each of 400 outputs.
-Appears to work well for each output, but combined together, very few training examples have all 400 predictions correct.
+This class will preprocess the data:
+
+For now, filter to only process cases where delta = 1
+
+For each row (delta = 1, stop cells 1 ... 400), generate:
+
+for i = 1:400
+	X[i] = (stop cell i, stop cell neighbors 1 ... 25)
+	Y[i] = (start cell i)
+
+
+
+
 '''
 
 def ft_exp(x):
@@ -23,11 +34,11 @@ def ft_exp(x):
 	return answer
 
 
-class LogisticRegression2:
+class LogisticRegression3:
 	# __ALPHA = 0.00001			# works for large dataset, 1 label
 	#__ALPHA = 0.000001			# works for large dataset, 400 labels, SLOWLY
 	# __ALPHA = 0.003
-	__ALPHA = 0.0001
+	__ALPHA = 0.001
 	__SIGMOID = np.vectorize(lambda x: 1 / (1 + ft_exp(-x)))
 	__PREDICT = np.vectorize(lambda x : 1 if x > 0 else 0)
 	
@@ -43,32 +54,71 @@ class LogisticRegression2:
 			answer = np.c_[id_column, answer]
 			np.savetxt(submission_file, answer.astype(int), fmt='%i', delimiter=',')
 
+
+	def __get_neighbors(self, board, i):
+		neighbors = []
+		x_current = i % 20
+		y_current = i // 20
+
+		for x_offset in range(-2, 3):
+			for y_offset in range(-2, 3):
+				x = x_current + x_offset
+				y = y_current + y_offset
+				if not (0 <= x < 20 and 0 <= y < 20):
+					neighbor_value = 0
+				else:
+					neighbor_value = 1 if board[int(y * 20 + x)] == 1 else -1
+				neighbors.append(neighbor_value)
+
+		return neighbors
+
+	def __generate_data_from_board(self, start_board, stop_board):
+		for i in range(400):
+			self.__Y = np.append(self.__Y, start_board[i].reshape(1, 1), axis=0)
+			neighbors = self.__get_neighbors(stop_board, i)
+			self.__X = np.append(self.__X, np.array(neighbors).reshape(1, 25), axis=0)
+
 	def __wrangle_data(self, filename):
 		print('Parsing data in %s...' % filename)
 		parser = TrainingDataParser(filename)
 		print('Wrangling data...')
 		all_data = np.array(parser.data, dtype=float)
-		self.__m = all_data.shape[0]
 
-		self.__X = all_data[:, 401:]					# grab 'stop cell' values in index 401 - 801
-		self.__X = np.c_[all_data[:, 0], self.__X]		# grab 'delta' value in index 0
-		self.__X[:, 0] = (self.__X[:, 0] - 3) / 4		# feature scaling: delta_scaled = (delta - 3) / 4
+		all_data = all_data[ all_data[:, 0] == 1 ]			# select only rows where delta == 1
+
+		print('all_data.shape = ', all_data.shape)
+
+
+		stop_boards = all_data[:, 401:802]					# grab 'stop cell' values in index 401 - 801
+		start_boards = all_data[:, 1:401]					# grab 'start cell' values in index 1 - 400
+
+		# assert start_boards.shape == stop_boards.shape
+
+		self.__X = np.empty((0, 25))
+		self.__Y = np.empty((0, 1))
+
+		for i in range(stop_boards.shape[0]):
+			self.__generate_data_from_board(start_boards[i, :], stop_boards[i, :])
+
+		
+
+		self.__m = self.__X.shape[0]
+
 		self.__X = np.c_[np.ones(self.__m), self.__X]	# add column of 1s
 
-		self.__Y = all_data[:, 1:401]					# grab 'start cell' values in index 1 - 400
-		self.__theta = np.zeros((402, 400))
+		print('Y.shape = ', self.__Y.shape)
+		print('X.shape = ', self.__X.shape)
+
 
 	def train(self, filename):
 		self.__wrangle_data(filename)
 		
-		for i in range(400):
-			print('Training on label: Start Cell %d...' % (i + 1))
-			Y_col = self.__Y[:, i]
-			Y_col = Y_col.reshape(Y_col.shape[0], 1)
-			# theta_col = self.__run_gradient_descent(Y_col, batch_size=1, epoch_limit=1000)		# online
-			theta_col = self.__run_gradient_descent(Y_col, batch_size=100, epoch_limit=1000)		# mini batch size = 100
-			# theta_col = self.__run_gradient_descent(Y_col, batch_size=self.__m, epoch_limit=1000)	# full batch
-			self.__theta[:, i] = theta_col.flatten()
+		
+
+		# theta_col = self.__run_gradient_descent(Y_col, batch_size=1, epoch_limit=1000)		# online
+		# self.__theta = self.__run_gradient_descent(self.__Y, batch_size=100, epoch_limit=1000)		# mini batch size = 100
+		self.__theta = self.__run_gradient_descent(self.__Y, batch_size=self.__m, epoch_limit=1000)	# full batch
+		
 
 		print('theta.shape = ', self.__theta.shape)
 		print('ALL COLUMNS correct = %d / %d' % (self.__count_correct_predictions(self.__Y, self.__theta), self.__m))
@@ -88,17 +138,24 @@ class LogisticRegression2:
 	def __run_gradient_descent(self, Y, batch_size, epoch_limit):
 		assert 1 <= batch_size <= self.__m
 
-		theta = np.zeros((402, 1))
+		theta = np.zeros((26, 1))
 		self.__iteration = 0
 
 		# print('running MINI-BATCH gradient descent...')
 		for i in range(epoch_limit):
 			self.__iteration += 1
 			x_batch, y_batch = self.__select_x_y_batch(Y, batch_size)
+
+			# print('x_batch.shape = ', x_batch.shape)
+			# print('y_batch.shape = ', y_batch.shape)
+			# print('theta.shape = ', theta.shape)
+
+
+
 			theta = theta - self.__ALPHA * x_batch.T @ (self.__SIGMOID(x_batch @ theta) - y_batch)
 			cost = self.__compute_cost_batch(x_batch, y_batch, theta)
 			# print('iteration = %d, cost = %f, correct = %d / %d' % (self.__iteration, cost, self.__count_correct_predictions(), self.__m))
-			# print('iteration = %d, cost = %f' % (self.__iteration, cost))
+			print('iteration = %d, cost = %f' % (self.__iteration, cost))
 
 		print('iteration = %d, cost = %f, correct = %d / %d' % (self.__iteration, cost, self.__count_correct_predictions(Y, theta), self.__m))
 		return theta

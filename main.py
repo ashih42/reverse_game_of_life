@@ -2,6 +2,7 @@
 
 from LogisticRegression import LogisticRegression
 from LogisticRegression2 import LogisticRegression2
+from LogisticRegression3 import LogisticRegression3
 from exceptions import ParserException, LogisticRegressionException
 from colorama import Fore, Back, Style
 import sys
@@ -14,7 +15,8 @@ def main():
 	training_file = sys.argv[1]
 	try:
 		# logistic_regression = LogisticRegression()
-		logistic_regression = LogisticRegression2()
+		# logistic_regression = LogisticRegression2()
+		logistic_regression = LogisticRegression3()
 		logistic_regression.train(training_file)
 	except IOError as e:
 		print(Style.BRIGHT + Fore.RED + 'I/O Error: ' + Style.RESET_ALL + Fore.RESET + str(e))

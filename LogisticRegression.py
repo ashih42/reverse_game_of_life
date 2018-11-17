@@ -6,10 +6,13 @@ import numpy as np
 import math
 
 '''
-
 m = number of training examples
 n = number of features = 401 + 1
+'''
 
+'''
+This class tries to solve a 402 x 400 theta matrix at once.
+Doesn't work for large dataset.
 '''
 
 def ft_exp(x):
