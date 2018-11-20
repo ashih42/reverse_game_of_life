@@ -27,12 +27,12 @@ def ft_exp(x):
 
 class LogisticRegression4:
 	np.random.seed(42)
-	__N = 442
+	__NUM_FEATURES = 442
 	__ALPHA = 0.003
 	# __ALPHA = 0.0001
 	
-	__MAX_EPOCHS = 20
-	# __MAX_EPOCHS = 500
+	# __MAX_EPOCHS = 20
+	__MAX_EPOCHS = 500
 
 	__IS_VERBOSE = os.getenv('RGOL_VERBOSE') == 'TRUE'
 	__SHOW_PLOTS = os.getenv('RGOL_SHOW_PLOTS') == 'TRUE'
@@ -40,23 +40,22 @@ class LogisticRegression4:
 
 	__PLOTS_DIRECTORY = 'Plots/'
 
-
 	__SIGMOID = np.vectorize(lambda x: 1 / (1 + ft_exp(-x)))
 	__PREDICT = np.vectorize(lambda x : 1 if x > 0 else 0)
 	
 	def __init__(self, param_filename=None):
 		if param_filename is not None:
-			parser = MatrixDataParser(param_filename, num_rows=self.__N, num_cols=400)
+			parser = MatrixDataParser(param_filename, num_rows=self.__NUM_FEATURES, num_cols=400)
 			self.__theta = np.array(parser.data, dtype = float)
 
 	def process_data(self, filename):
 		parser = DataParser(filename, is_training_data=True)
-		self.__m, self.__X, self.__Y = self.__wrangle_data(parser.data, is_training_data=True)
-		self.__write_processed_data_to_file(self.__X, 'processed_X.dat')
-		self.__write_processed_data_to_file(self.__Y, 'processed_Y.dat')
+		X, Y = self.__wrangle_data(parser.data, is_training_data=True)
+		self.__write_processed_data_to_file(X, 'processed_X.dat')
+		self.__write_processed_data_to_file(Y, 'processed_Y.dat')
 
 	def train_processed_data(self, X_filename, Y_filename):
-		X_parser = MatrixDataParser(X_filename, num_rows=None, num_cols=self.__N)
+		X_parser = MatrixDataParser(X_filename, num_rows=None, num_cols=self.__NUM_FEATURES)
 		X = np.array(X_parser.data, dtype = float)
 		m = X.shape[0]
 		Y_parser = MatrixDataParser(Y_filename, num_rows=m, num_cols=400)
@@ -66,15 +65,15 @@ class LogisticRegression4:
 
 	def train(self, filename):
 		parser = DataParser(filename, is_training_data=True)
-		m, X, Y = self.__wrangle_data(parser.data, is_training_data=True)
+		X, Y = self.__wrangle_data(parser.data, is_training_data=True)
 		X_train, Y_train, X_cv, Y_cv = self.__generate_train_cv_sets(X, Y)
 		self.__train(X_train, Y_train, X_cv, Y_cv)
 
 	def predict(self, filename):
 		parser = DataParser(filename, is_training_data=False)
 		test_data = np.array(parser.data, dtype = float)
-		test_m, testX, _ = self.__wrangle_data(parser.data, is_training_data=False)
-		predictions = self.__PREDICT(testX @ self.__theta)
+		X_test, _ = self.__wrangle_data(parser.data, is_training_data=False)
+		predictions = self.__PREDICT(X_test @ self.__theta)
 		self.__write_predictions_to_file(predictions)
 
 	def __wrangle_data(self, data, is_training_data):
@@ -99,13 +98,13 @@ class LogisticRegression4:
 		else:
 			Y = None
 
-		return m, X, Y
+		return X, Y
 
 	# Generate 40 features: number of alive cells for row1, ..., row20, col1, ..., col20
 	def __generate_additional_features(self, X):
 		new_features = np.empty((0, 40))
 
-		for i in range(X.shape[0]):										# THIS LOOP IS REALLY SLOW
+		for i in range(X.shape[0]):								# THIS LOOP IS REALLY SLOW
 			board = X[i, :]
 			board = board.reshape((20, 20))
 			row_sum = np.sum(board, axis=0)
@@ -113,11 +112,10 @@ class LogisticRegression4:
 			all_sum = np.concatenate((row_sum, col_sum))
 			new_features = np.append(new_features, all_sum.reshape((1, 40)), axis=0)
 
-		new_features[:, :] = (new_features[:, :] - 20) / 20				# feature scaling from range [0 ... 40] to [-1 ... 1]
+		new_features[:, :] = (new_features[:, :] - 20) / 20		# feature scaling from range [0 ... 40] to [-1 ... 1]
 
 		X = np.c_[X, new_features]
 		return X
-
 
 	def __generate_train_cv_sets(self, X, Y, percent_train=0.7):
 		m = X.shape[0]
@@ -139,10 +137,11 @@ class LogisticRegression4:
 
 	def __train(self, X_train, Y_train, X_cv, Y_cv):
 		self.__init_plots()
-		self.__theta = np.zeros((self.__N, 400))
+		self.__theta = np.zeros((self.__NUM_FEATURES, 400))
 		for i in range(400):
-			print('Training on label: Start Cell %d...' % (i + 1))
-			self.__init_lists(i)
+			self.__current_label = i + 1
+			print('Training on label: Start Cell %d...' % self.__current_label)
+			self.__init_lists()
 
 			Y_train_col = Y_train[:, i]
 			Y_train_col = Y_train_col.reshape(Y_train_col.shape[0], 1)
@@ -155,12 +154,12 @@ class LogisticRegression4:
 
 			if self.__SAVE_PLOTS:
 				self.__update_plots()
-				self.__save_plots(i)
+				self.__save_plots()
 
 		self.__write_parameters_to_file()
 
 	def __run_gradient_descent(self, X_train, Y_train, X_cv, Y_cv, batch_size):
-		theta = np.zeros((self.__N, 1))
+		theta = np.zeros((self.__NUM_FEATURES, 1))
 		self.__epoch = 0
 
 		for i in range(self.__MAX_EPOCHS):
@@ -175,17 +174,17 @@ class LogisticRegression4:
 				print(Fore.RED + 'Training:         ' + Fore.RESET +
 					'Start Cell %d: Epoch = %d, Cost = %.3f, Accuracy = %.3f, F1 Score = %.3f' % (
 					self.__current_label,
-					self.epoch_list[-1],
-					self.train_cost_list[-1],
-					self.train_accuracy_list[-1],
-					self.train_f1_list[-1]))
+					self.__epoch_list[-1],
+					self.__train_cost_list[-1],
+					self.__train_accuracy_list[-1],
+					self.__train_f1_list[-1]))
 				print(Fore.GREEN + 'Cross Validation: ' + Fore.RESET +
 					'Start Cell %d: Epoch = %d, Cost = %.3f, Accuracy = %.3f, F1 Score = %.3f' % (
 					self.__current_label,
-					self.epoch_list[-1],
-					self.cv_cost_list[-1],
-					self.cv_accuracy_list[-1],
-					self.cv_f1_list[-1]))
+					self.__epoch_list[-1],
+					self.__cv_cost_list[-1],
+					self.__cv_accuracy_list[-1],
+					self.__cv_f1_list[-1]))
 			
 			if self.__SHOW_PLOTS:
 				self.__update_plots()
@@ -206,19 +205,19 @@ class LogisticRegression4:
 			return X, Y
 
 	def __measure_performance(self, X_train, Y_train, X_cv, Y_cv, theta):
-		self.epoch_list.append(self.__epoch)
+		self.__epoch_list.append(self.__epoch)
 
-		self.train_cost_list.append(self.__compute_cost_batch(X_train, Y_train, theta))
+		self.__train_cost_list.append(self.__get_cost(X_train, Y_train, theta))
 		train_predictions = self.__PREDICT(X_train @ theta)
-		self.train_accuracy_list.append(self.__get_accuracy(train_predictions, Y_train))
-		self.train_f1_list.append(self.__get_f1_score(train_predictions, Y_train))
+		self.__train_accuracy_list.append(self.__get_accuracy(train_predictions, Y_train))
+		self.__train_f1_list.append(self.__get_f1_score(train_predictions, Y_train))
 
-		self.cv_cost_list.append(self.__compute_cost_batch(X_cv, Y_cv, theta))
+		self.__cv_cost_list.append(self.__get_cost(X_cv, Y_cv, theta))
 		cv_predictions = self.__PREDICT(X_cv @ theta)
-		self.cv_accuracy_list.append(self.__get_accuracy(cv_predictions, Y_cv))
-		self.cv_f1_list.append(self.__get_f1_score(cv_predictions, Y_cv))
+		self.__cv_accuracy_list.append(self.__get_accuracy(cv_predictions, Y_cv))
+		self.__cv_f1_list.append(self.__get_f1_score(cv_predictions, Y_cv))
 
-	def __compute_cost_batch(self, X, Y, theta):
+	def __get_cost(self, X, Y, theta):
 		m = X.shape[0]
 		return 1 / m * np.sum(np.sum(
 			-Y * np.log(self.__SIGMOID(X @ theta)) -
@@ -252,86 +251,83 @@ class LogisticRegression4:
 		except:
 			os.mkdir(self.__PLOTS_DIRECTORY)
 
-		self.fig = plt.figure(figsize=(18, 12))
-		self.fig.tight_layout()
+		self.__fig = plt.figure(figsize=(18, 12))
+		self.__fig.tight_layout()
 		
-		self.ax_train_cost = self.fig.add_subplot(2, 3, 1)
-		self.ax_train_accuracy = self.fig.add_subplot(2, 3, 2)
-		self.ax_train_f1 = self.fig.add_subplot(2, 3, 3)
+		self.__ax_train_cost = self.__fig.add_subplot(2, 3, 1)
+		self.__ax_train_accuracy = self.__fig.add_subplot(2, 3, 2)
+		self.__ax_train_f1 = self.__fig.add_subplot(2, 3, 3)
 		
-		self.ax_cv_cost = self.fig.add_subplot(2, 3, 4)
-		self.ax_cv_accuracy = self.fig.add_subplot(2, 3, 5)
-		self.ax_cv_f1 = self.fig.add_subplot(2, 3, 6)
+		self.__ax_cv_cost = self.__fig.add_subplot(2, 3, 4)
+		self.__ax_cv_accuracy = self.__fig.add_subplot(2, 3, 5)
+		self.__ax_cv_f1 = self.__fig.add_subplot(2, 3, 6)
 
-	def __save_plots(self, label_index):
-		filename = self.__PLOTS_DIRECTORY + 'Training Performance on Start Cell %d' % (label_index + 1)
-		plt.savefig(filename)
-		print('Saved plots in ' + Fore.BLUE + filename + '.png' + Fore.RESET)
+	def __init_lists(self):
+		self.__epoch_list = []
 
-	def __init_lists(self, label_index):
-		self.__current_label = label_index + 1
-		self.epoch_list = []
-		self.train_cost_list = []
-		self.train_accuracy_list = []
-		self.train_f1_list = []
+		self.__train_cost_list = []
+		self.__train_accuracy_list = []
+		self.__train_f1_list = []
 
-		self.cv_cost_list = []
-		self.cv_accuracy_list = []
-		self.cv_f1_list = []
+		self.__cv_cost_list = []
+		self.__cv_accuracy_list = []
+		self.__cv_f1_list = []
 
 	def __update_plots(self):
 		# Training: Cost vs Epoch
-		self.ax_train_cost.clear()
-		self.ax_train_cost.plot(self.epoch_list, self.train_cost_list)
-		self.ax_train_cost.fill_between(self.epoch_list, 0, self.train_cost_list, facecolor='blue', alpha=0.5)
-		self.ax_train_cost.set_xlabel('Epoch')
-		self.ax_train_cost.set_ylabel('Cost')
-		self.ax_train_cost.set_title('Training: Start Cell %d\nCost at Epoch %d: %.3f' %
-			(self.__current_label, self.epoch_list[-1], self.train_cost_list[-1]))
+		self.__ax_train_cost.clear()
+		self.__ax_train_cost.plot(self.__epoch_list, self.__train_cost_list)
+		self.__ax_train_cost.fill_between(self.__epoch_list, 0, self.__train_cost_list, facecolor='blue', alpha=0.5)
+		self.__ax_train_cost.set_xlabel('Epoch')
+		self.__ax_train_cost.set_ylabel('Cost')
+		self.__ax_train_cost.set_title('Training: Start Cell %d\nCost at Epoch %d: %.3f' %
+			(self.__current_label, self.__epoch_list[-1], self.__train_cost_list[-1]))
 		# Training: Prediction Accuracy vs Epoch
-		self.ax_train_accuracy.clear()
-		self.ax_train_accuracy.plot(self.epoch_list, self.train_accuracy_list)
-		self.ax_train_accuracy.fill_between(self.epoch_list, 0, self.train_accuracy_list, facecolor='cyan', alpha=0.5)
-		self.ax_train_accuracy.set_xlabel('Epoch')
-		self.ax_train_accuracy.set_ylabel('Accuracy')
-		self.ax_train_accuracy.set_title('Training: Start Cell %d\nPrediction Accuracy at Epoch %d: %.3f' %
-			(self.__current_label, self.epoch_list[-1], self.train_accuracy_list[-1]))
+		self.__ax_train_accuracy.clear()
+		self.__ax_train_accuracy.plot(self.__epoch_list, self.__train_accuracy_list)
+		self.__ax_train_accuracy.fill_between(self.__epoch_list, 0, self.__train_accuracy_list, facecolor='cyan', alpha=0.5)
+		self.__ax_train_accuracy.set_xlabel('Epoch')
+		self.__ax_train_accuracy.set_ylabel('Accuracy')
+		self.__ax_train_accuracy.set_title('Training: Start Cell %d\nPrediction Accuracy at Epoch %d: %.3f' %
+			(self.__current_label, self.__epoch_list[-1], self.__train_accuracy_list[-1]))
 		# Training: F1 Score vs Epoch
-		self.ax_train_f1.clear()
-		self.ax_train_f1.plot(self.epoch_list, self.train_f1_list)
-		self.ax_train_f1.fill_between(self.epoch_list, 0, self.train_f1_list, facecolor='red', alpha=0.5)
-		self.ax_train_f1.set_xlabel('Epoch')
-		self.ax_train_f1.set_ylabel('F1 Score')
-		self.ax_train_f1.set_title('Training: Start Cell %d\nF1 Score at Epoch %d: %.3f' %
-			(self.__current_label, self.epoch_list[-1], self.train_f1_list[-1]))
+		self.__ax_train_f1.clear()
+		self.__ax_train_f1.plot(self.__epoch_list, self.__train_f1_list)
+		self.__ax_train_f1.fill_between(self.__epoch_list, 0, self.__train_f1_list, facecolor='red', alpha=0.5)
+		self.__ax_train_f1.set_xlabel('Epoch')
+		self.__ax_train_f1.set_ylabel('F1 Score')
+		self.__ax_train_f1.set_title('Training: Start Cell %d\nF1 Score at Epoch %d: %.3f' %
+			(self.__current_label, self.__epoch_list[-1], self.__train_f1_list[-1]))
 
 		# CV: Cost vs Epoch
-		self.ax_cv_cost.clear()
-		self.ax_cv_cost.plot(self.epoch_list, self.cv_cost_list)
-		self.ax_cv_cost.fill_between(self.epoch_list, 0, self.cv_cost_list, facecolor='blue', alpha=0.5)
-		self.ax_cv_cost.set_xlabel('Epoch')
-		self.ax_cv_cost.set_ylabel('Cost')
-		self.ax_cv_cost.set_title('Cross Validation: Start Cell %d\nCost at Epoch %d: %.3f' %
-			(self.__current_label, self.epoch_list[-1], self.cv_cost_list[-1]))
+		self.__ax_cv_cost.clear()
+		self.__ax_cv_cost.plot(self.__epoch_list, self.__cv_cost_list)
+		self.__ax_cv_cost.fill_between(self.__epoch_list, 0, self.__cv_cost_list, facecolor='blue', alpha=0.5)
+		self.__ax_cv_cost.set_xlabel('Epoch')
+		self.__ax_cv_cost.set_ylabel('Cost')
+		self.__ax_cv_cost.set_title('Cross Validation: Start Cell %d\nCost at Epoch %d: %.3f' %
+			(self.__current_label, self.__epoch_list[-1], self.__cv_cost_list[-1]))
 		# CV: Prediction Accuracy vs Epoch
-		self.ax_cv_accuracy.clear()
-		self.ax_cv_accuracy.plot(self.epoch_list, self.cv_accuracy_list)
-		self.ax_cv_accuracy.fill_between(self.epoch_list, 0, self.cv_accuracy_list, facecolor='cyan', alpha=0.5)
-		self.ax_cv_accuracy.set_xlabel('Epoch')
-		self.ax_cv_accuracy.set_ylabel('Accuracy')
-		self.ax_cv_accuracy.set_title('Cross Validation: Start Cell %d\nPrediction Accuracy at Epoch %d: %.3f' %
-			(self.__current_label, self.epoch_list[-1], self.cv_accuracy_list[-1]))
+		self.__ax_cv_accuracy.clear()
+		self.__ax_cv_accuracy.plot(self.__epoch_list, self.__cv_accuracy_list)
+		self.__ax_cv_accuracy.fill_between(self.__epoch_list, 0, self.__cv_accuracy_list, facecolor='cyan', alpha=0.5)
+		self.__ax_cv_accuracy.set_xlabel('Epoch')
+		self.__ax_cv_accuracy.set_ylabel('Accuracy')
+		self.__ax_cv_accuracy.set_title('Cross Validation: Start Cell %d\nPrediction Accuracy at Epoch %d: %.3f' %
+			(self.__current_label, self.__epoch_list[-1], self.__cv_accuracy_list[-1]))
 		# CV: F1 Score vs Epoch
-		self.ax_cv_f1.clear()
-		self.ax_cv_f1.plot(self.epoch_list, self.cv_f1_list)
-		self.ax_cv_f1.fill_between(self.epoch_list, 0, self.cv_f1_list, facecolor='red', alpha=0.5)
-		self.ax_cv_f1.set_xlabel('Epoch')
-		self.ax_cv_f1.set_ylabel('F1 Score')
-		self.ax_cv_f1.set_title('Cross Validation: Start Cell %d\nF1 Score at Epoch %d: %.3f' %
-			(self.__current_label, self.epoch_list[-1], self.cv_f1_list[-1]))
+		self.__ax_cv_f1.clear()
+		self.__ax_cv_f1.plot(self.__epoch_list, self.__cv_f1_list)
+		self.__ax_cv_f1.fill_between(self.__epoch_list, 0, self.__cv_f1_list, facecolor='red', alpha=0.5)
+		self.__ax_cv_f1.set_xlabel('Epoch')
+		self.__ax_cv_f1.set_ylabel('F1 Score')
+		self.__ax_cv_f1.set_title('Cross Validation: Start Cell %d\nF1 Score at Epoch %d: %.3f' %
+			(self.__current_label, self.__epoch_list[-1], self.__cv_f1_list[-1]))
 
-
-		
+	def __save_plots(self):
+		filename = self.__PLOTS_DIRECTORY + 'Training Performance on Start Cell %d' % self.__current_label
+		plt.savefig(filename)
+		print('Saved plots in ' + Fore.BLUE + filename + '.png' + Fore.RESET)	
 
 	def __write_processed_data_to_file(self, data, filename):
 		with open(filename, 'wb') as file:
