@@ -1,6 +1,10 @@
 from exceptions import ParserException
 from colorama import Fore, Back, Style
 
+'''
+Parses a matrix of float values, given the matrix dimensions
+'''
+
 class MatrixDataParser:
 	
 	def __init__(self, filename, num_rows, num_cols):
