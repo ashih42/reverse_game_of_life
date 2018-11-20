@@ -1,31 +1,24 @@
 from exceptions import ParserException
 from colorama import Fore, Back, Style
 
-'''
-Format:
-442 x 400 floats, separated by commas
-
-442 features
-400 labels to predict
-
-'''
-
-class ParamParser:
+class MatrixDataParser:
 	
-	def __init__(self, filename):
-		print('Parsing model parameters in ' + Fore.BLUE + filename + Fore.RESET)
+	def __init__(self, filename, num_rows, num_cols):
+		print('Parsing data in ' + Fore.BLUE + filename + Fore.RESET)
+		self.__num_cols = num_cols
 		self.__line_number = 0
 		self.data = []
 		with open(filename, 'r') as data_file:
 			for line in data_file:
 				self.__parse_line(line.strip())
-		if len(self.data) != 442:
-			raise ParserException('Invalid number of rows of parameters')
+		if num_rows is not None and len(self.data) != num_rows:
+			raise ParserException('Invalid number of rows')
 
 	def __parse_line(self, line):
 		self.__line_number += 1
 		tokens = line.split(',')
-		if len(tokens) != 400:
+		if len(tokens) != self.__num_cols:
+			print('expected num_cols = %d, got len(tokens) = %d' % (self.__num_cols, len(tokens)))
 			raise ParserException('Invalid number of terms at ' +
 				Fore.GREEN + 'line %d' % (self.__line_number) + Fore.RESET + ': ' + Fore.MAGENTA + line + Fore.RESET)
 		row_data = []
