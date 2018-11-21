@@ -1,0 +1,28 @@
+Bonus:
+
+- Authentic Game of Life simulator!
+
+
+
+
+- Phat-ass UML diagram!
+- Mini-batch gradient descent!
+- Cross-validation!
+- Meaningful performance measurements!
+- Superbly formatted logs!
+- Beautiful plots!
+- Robust error-handling!
+
+
+
+
+- Overfitting?
+
+
+- Neural Network?
+
+
+- Principal Component Analysis
+
+
+- custom batch size at run time

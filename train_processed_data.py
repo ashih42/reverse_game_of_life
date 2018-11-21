@@ -1,6 +1,6 @@
 # (☞ﾟヮﾟ)☞  train_processed_data.py
 
-from LogisticRegression4 import LogisticRegression4
+from LogisticRegression5 import LogisticRegression5
 from exceptions import ParserException, LogisticRegressionException
 from colorama import Fore, Back, Style
 import sys
@@ -14,7 +14,7 @@ def main():
 	Y_file = sys.argv[2]
 	# initialize a new model and train on training data
 	try:
-		logistic_regression = LogisticRegression4()
+		logistic_regression = LogisticRegression5()
 		logistic_regression.train_processed_data(X_file, Y_file)
 	except IOError as e:
 		print(Style.BRIGHT + Fore.RED + 'I/O Error: ' + Style.RESET_ALL + Fore.RESET + str(e))
