@@ -8,7 +8,7 @@ Parses a matrix of float values, given the matrix dimensions
 class MatrixDataParser:
 	
 	def __init__(self, filename, num_rows, num_cols):
-		print('Parsing data in ' + Fore.BLUE + filename + Fore.RESET)
+		# print('Parsing data in ' + Fore.BLUE + filename + Fore.RESET)
 		self.__num_cols = num_cols
 		self.__line_number = 0
 		self.data = []
@@ -16,6 +16,8 @@ class MatrixDataParser:
 			for line in data_file:
 				self.__parse_line(line.strip())
 		if num_rows is not None and len(self.data) != num_rows:
+			# print('MatrixDataParser num_rows = %d, num_cols = %d' % (num_rows, num_cols))
+			# print('expected num_rows = %d, got = %d' % (num_rows, len(self.data)))
 			raise ParserException('Invalid number of rows')
 
 	def __parse_line(self, line):

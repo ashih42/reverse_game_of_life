@@ -1,6 +1,6 @@
 # (☞ﾟヮﾟ)☞  predict.py
 
-from LogisticRegression4 import LogisticRegression4
+from LogisticRegression5 import LogisticRegression5
 from exceptions import ParserException, LogisticRegressionException
 from colorama import Fore, Back, Style
 import sys
@@ -14,7 +14,7 @@ def main():
 	test_file = sys.argv[2]
 	# load model parameters and make predictions on test data
 	try:
-		logistic_regression = LogisticRegression4(param_file)
+		logistic_regression = LogisticRegression5(param_file)
 		logistic_regression.predict(test_file)
 	except IOError as e:
 		print(Style.BRIGHT + Fore.RED + 'I/O Error: ' + Style.RESET_ALL + Fore.RESET + str(e))

@@ -7,12 +7,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import os
+import shutil
+
 
 import fast_wrangle
 
+
+
 '''
 m = number of training examples		= 100 ~ 50,000
-n = number of features				= 401 + 40 + 1 = 442
+n = number of features				= 123
 '''
 
 '''
@@ -33,17 +37,18 @@ def ft_exp(x):
 
 class LogisticRegression5:
 	np.random.seed(42)
-	__NUM_FEATURES = 123
-	__NUM_LABELS = 1
+	# __NUM_FEATURES = 11*11 + 2
+	__NUM_FEATURES = 1*1 + 2
+	__NUM_LABELS = 400
 
 	# __NUM_FEATURES = 402			# try with just the given data, no new features
 
-	__ALPHA = 0.003
+	__ALPHA = 0.00001
 	# __ALPHA = 0.001
 	# __ALPHA = 0.0001
 	
 	# __MAX_EPOCHS = 20
-	__MAX_EPOCHS = 500
+	__MAX_EPOCHS = 10
 
 	__IS_VERBOSE = os.getenv('RGOL_VERBOSE') == 'TRUE'
 	__SHOW_PLOTS = os.getenv('RGOL_SHOW_PLOTS') == 'TRUE'
@@ -53,9 +58,12 @@ class LogisticRegression5:
 
 	__SIGMOID = np.vectorize(lambda x: 1 / (1 + ft_exp(-x)))
 	__PREDICT = np.vectorize(lambda x : 1 if x > 0 else 0)
+
+	__BATCH_SIZE = 100
 	
 	def __init__(self, param_filename=None):
 		if param_filename is not None:
+			# print('self.__NUM_FEATURES = %d', self.__NUM_FEATURES)
 			parser = MatrixDataParser(param_filename, num_rows=self.__NUM_FEATURES, num_cols=400)
 			self.__theta = np.array(parser.data, dtype = float)
 
@@ -77,14 +85,34 @@ class LogisticRegression5:
 	def train(self, filename):
 		parser = DataParser(filename, is_training_data=True)
 		X, Y = self.__wrangle_data(parser.data, is_training_data=True)
-		X_train, Y_train, X_cv, Y_cv = self.__generate_train_cv_sets(X, Y)
-		self.__train(X_train, Y_train, X_cv, Y_cv)
+
+		# X_train, Y_train, X_cv, Y_cv = self.__generate_train_cv_sets(X, Y)
+		# self.__train(X_train, Y_train, X_cv, Y_cv)
+
+		self.__train(X, Y)
+		
 
 	def predict(self, filename):
 		parser = DataParser(filename, is_training_data=False)
 		test_data = np.array(parser.data, dtype = float)
 		X_test, _ = self.__wrangle_data(parser.data, is_training_data=False)
-		predictions = self.__PREDICT(X_test @ self.__theta)
+		
+
+		# predictions = self.__PREDICT(X_test @ self.__theta)
+		
+		# print('X_test.shape = ', X_test.shape)
+
+		# print('theta.shape = ', self.__theta.shape)
+
+		predictions = np.empty((X_test.shape[1], 400))
+		for i in range(400):
+			X_test_subset = X_test[i, :, :]
+
+			theta_col = self.__theta[:, i].reshape(self.__theta.shape[0], 1)
+
+			# print('X_test_subset.shape = ', X_test_subset.shape)
+			predictions[:, i] = self.__PREDICT(X_test_subset @ theta_col).flatten()
+
 		self.__write_predictions_to_file(predictions)
 
 	def __wrangle_data(self, data, is_training_data):
@@ -101,8 +129,6 @@ class LogisticRegression5:
 		X = np.c_[data[:, 0], X]						# grab 'delta' value in index 0
 		X[:, 0] = (X[:, 0] - 3) / 2						# feature scaling from range [1 ... 5] to [-1 ... 1]
 
-		# print('X.shape = ', X.shape)
-
 		# X = self.__format_X(X)
 		X = fast_wrangle.format_X(X)
 
@@ -110,82 +136,124 @@ class LogisticRegression5:
 
 		if is_training_data:
 			Y = data[:, 1:401]							# grab 'start cell' values in index 1 - 400
-			Y = self.__format_Y(Y)
 		else:
 			Y = None
 
-		print('X.shape = ', X.shape)
-		print('Y.shape = ', Y.shape)
+		# print('X.shape = ', X.shape)
+		# print('Y.shape = ', Y.shape)
 
 		return X, Y
 
-	def __format_Y(self, Y):
-		Y_new = Y.reshape(Y.shape[0] * Y.shape[1], 1)
-		return Y_new
+	# def __format_Y(self, Y):
+	# 	Y_new = Y.reshape(Y.shape[0] * Y.shape[1], 1)
+	# 	return Y_new
 	
-	def __format_X(self, X):
-		X_new = np.empty((0, 1 + 121))
+	# def __format_X(self, X):
+	# 	X_new = np.empty((0, 1 + 121))
 
-		for i in range(X.shape[0]):								# THIS LOOP IS REALLY SLOW
+	# 	for i in range(X.shape[0]):								# THIS LOOP IS REALLY SLOW
 
-			if self.__IS_VERBOSE:
-				print('Formatting entry %d / %d' % (i, X.shape[0]))
+	# 		if self.__IS_VERBOSE:
+	# 			print('Formatting entry %d / %d' % (i, X.shape[0]))
 
-			row_data = np.empty((400, 122))
+	# 		row_data = np.empty((400, 122))
 
-			delta = X[i, 0]
+	# 		delta = X[i, 0]
 			
-			board = X[i, 1:].reshape((20, 20))
+	# 		board = X[i, 1:].reshape((20, 20))
 			
-			# extend the board with 5 cell margins around borders
-			board = np.c_[ np.zeros((20, 5)), board, np.zeros((20, 5))]
-			board = np.r_[ np.zeros((5, 30)), board, np.zeros((5, 30))]
+	# 		# extend the board with 5 cell margins around borders
+	# 		board = np.c_[ np.zeros((20, 5)), board, np.zeros((20, 5))]
+	# 		board = np.r_[ np.zeros((5, 30)), board, np.zeros((5, 30))]
 
-			for x in range(20):
-				for y in range(20):
-					x_origin = x + 5
-					y_origin = y + 5
-					x_low = clamp(x_origin - 5, 0, 29)
-					x_high = clamp(x_origin + 5, 0, 29)
-					y_low = clamp(y_origin - 5, 0, 29)
-					y_high = clamp(y_origin + 5, 0, 29)
+	# 		for x in range(20):
+	# 			for y in range(20):
+	# 				x_origin = x + 5
+	# 				y_origin = y + 5
+	# 				x_low = clamp(x_origin - 5, 0, 29)
+	# 				x_high = clamp(x_origin + 5, 0, 29)
+	# 				y_low = clamp(y_origin - 5, 0, 29)
+	# 				y_high = clamp(y_origin + 5, 0, 29)
 
-					sub_board = board[x_low:x_high+1, y_low:y_high+1]
+	# 				sub_board = board[x_low:x_high+1, y_low:y_high+1]
 
-					row_index = x * 20 + y
-					row_data[row_index, 1:] = sub_board.reshape((1, 121))
+	# 				row_index = x * 20 + y
+	# 				row_data[row_index, 1:] = sub_board.reshape((1, 121))
 
-			row_data[:, 0] = delta
+	# 		row_data[:, 0] = delta
 			
-			X_new = np.append(X_new, row_data, axis=0)
+	# 		X_new = np.append(X_new, row_data, axis=0)
 
-		X_new = np.c_[np.ones(X_new.shape[0]), X_new]				# add column of 1s
+	# 	X_new = np.c_[np.ones(X_new.shape[0]), X_new]				# add column of 1s
 
-		print('X_new.shape = ', X_new.shape)
+	# 	print('X_new.shape = ', X_new.shape)
 
-		return X_new
+	# 	return X_new
 
 
-	
 	def __generate_train_cv_sets(self, X, Y, percent_train=0.7):
-		m = X.shape[0]
-		indices = np.arange(m)
-		np.random.shuffle(indices)
+		# return fast_wrangle.get_train_cv_sets(X, Y, percent_train)
 
-		X_temp = X[indices, :]
-		Y_temp = Y[indices, :]
+		m = X.shape[1]
+		
+		split_index = int(m * percent_train)
+		
+		X_train = X[:, :split_index, :]
+		X_cv = X[:, split_index:, :]
 
-		split_row_index = int(m * percent_train)
-
-		X_train = X_temp[:split_row_index, :]
-		Y_train = Y_temp[:split_row_index, :]
-
-		X_cv = X_temp[split_row_index:, :]
-		Y_cv = Y_temp[split_row_index:, :]
+		Y_train = Y[:split_index, :]
+		Y_cv = Y[split_index:, :]
 
 		return X_train, Y_train, X_cv, Y_cv
 
-	def __train(self, X_train, Y_train, X_cv, Y_cv):
+		# m = X.shape[1]
+		
+		# indices = np.arange(m)
+		# np.random.shuffle(indices)
+
+		# split_index = int(m * percent_train)
+		# train_indices = indices[:split_index]
+		# cv_indices = indices[split_index:]
+
+		# X_train = X[:, train_indices, :]
+		# X_cv = X[:, cv_indices, :]
+
+		# Y_train = Y[train_indices, :]
+		# Y_cv = Y[cv_indices, :]
+
+		# return X_train, Y_train, X_cv, Y_cv
+
+	
+	# def __generate_train_cv_sets(self, X, Y, percent_train=0.7):
+	# 	m = X.shape[0]
+	# 	indices = np.arange(m)
+	# 	np.random.shuffle(indices)
+
+	# 	X_temp = X[indices, :]
+	# 	Y_temp = Y[indices, :]
+
+	# 	split_row_index = int(m * percent_train)
+
+	# 	X_train = X_temp[:split_row_index, :]
+	# 	Y_train = Y_temp[:split_row_index, :]
+
+	# 	X_cv = X_temp[split_row_index:, :]
+	# 	Y_cv = Y_temp[split_row_index:, :]
+
+	# 	return X_train, Y_train, X_cv, Y_cv
+
+
+	def __train(self, X_train, Y_train, X_cv=None, Y_cv=None):
+		try:
+			shutil.rmtree(self.__PLOTS_DIRECTORY)
+		except IOError as e:
+			pass
+
+		if X_cv is None or Y_cv is None:
+			self.__is_cv = False;
+		else:
+			self.__is_cv = True;
+
 		self.__init_plots()
 		self.__theta = np.zeros((self.__NUM_FEATURES, self.__NUM_LABELS))
 		for i in range(self.__NUM_LABELS):
@@ -193,20 +261,26 @@ class LogisticRegression5:
 			print('Training on label: Start Cell %d...' % self.__current_label)
 			self.__init_lists()
 
+			X_train_subset = X_train[i, :, :]
+
 			Y_train_col = Y_train[:, i]
 			Y_train_col = Y_train_col.reshape(Y_train_col.shape[0], 1)
 
-			Y_cv_col = Y_cv[:, i]
-			Y_cv_col = Y_cv_col.reshape(Y_cv_col.shape[0], 1)
+			if self.__is_cv:
+				X_cv_subset = X_cv[i, :, :]
+
+				Y_cv_col = Y_cv[:, i]
+				Y_cv_col = Y_cv_col.reshape(Y_cv_col.shape[0], 1)
+			else:
+				X_cv_subset = None
+				Y_cv_col = None
 			
-			theta_col = self.__run_gradient_descent(X_train, Y_train_col, X_cv, Y_cv_col, batch_size=100)			# mini batch size = 100
+			theta_col = self.__run_gradient_descent(X_train_subset, Y_train_col, X_cv_subset, Y_cv_col, batch_size=100)			# mini batch size = 100
 			self.__theta[:, i] = theta_col.flatten()
 
 			if self.__SAVE_PLOTS:
 				self.__update_plots()
 				self.__save_plots()
-
-		print('GOT HERE 1')
 
 		self.__write_parameters_to_file()
 
@@ -216,27 +290,36 @@ class LogisticRegression5:
 
 		for i in range(self.__MAX_EPOCHS):
 			self.__epoch += 1
-			X_batch, Y_batch = self.__select_x_y_batch(X_train, Y_train, batch_size)
-			theta = theta - self.__ALPHA * X_batch.T @ (self.__SIGMOID(X_batch @ theta) - Y_batch)
+
+			j_limit = X_train.shape[0] // self.__BATCH_SIZE
+
+			for j in range(j_limit):
+				X_batch = X_train[j*self.__BATCH_SIZE:(j+1)*self.__BATCH_SIZE, :]
+				Y_batch = Y_train[j*self.__BATCH_SIZE:(j+1)*self.__BATCH_SIZE, :]
+				theta = theta - self.__ALPHA * X_batch.T @ (self.__SIGMOID(X_batch @ theta) - Y_batch)
+
+			# X_batch, Y_batch = self.__select_x_y_batch(X_train, Y_train, batch_size)
+			# theta = theta - self.__ALPHA * X_batch.T @ (self.__SIGMOID(X_batch @ theta) - Y_batch)
 			
 			if self.__IS_VERBOSE or self.__SHOW_PLOTS or self.__SAVE_PLOTS:
-				self.__measure_performance(X_train, Y_train, X_cv, Y_cv, theta)
+				self.__measure_performance(X_train, Y_train, theta, X_cv, Y_cv)
 
 			if self.__IS_VERBOSE:
-				print(Fore.RED + 'Training:         ' + Fore.RESET +
+				print(Fore.BLUE + 'Training:         ' + Fore.RESET +
 					'Start Cell %d: Epoch = %d, Cost = %.3f, Accuracy = %.3f, F1 Score = %.3f' % (
 					self.__current_label,
 					self.__epoch_list[-1],
 					self.__train_cost_list[-1],
 					self.__train_accuracy_list[-1],
 					self.__train_f1_list[-1]))
-				print(Fore.GREEN + 'Cross Validation: ' + Fore.RESET +
-					'Start Cell %d: Epoch = %d, Cost = %.3f, Accuracy = %.3f, F1 Score = %.3f' % (
-					self.__current_label,
-					self.__epoch_list[-1],
-					self.__cv_cost_list[-1],
-					self.__cv_accuracy_list[-1],
-					self.__cv_f1_list[-1]))
+				if self.__is_cv:
+					print(Fore.GREEN + 'Cross Validation: ' + Fore.RESET +
+						'Start Cell %d: Epoch = %d, Cost = %.3f, Accuracy = %.3f, F1 Score = %.3f' % (
+						self.__current_label,
+						self.__epoch_list[-1],
+						self.__cv_cost_list[-1],
+						self.__cv_accuracy_list[-1],
+						self.__cv_f1_list[-1]))
 			
 			if self.__SHOW_PLOTS:
 				self.__update_plots()
@@ -248,15 +331,18 @@ class LogisticRegression5:
 	def	__select_x_y_batch(self, X, Y, batch_size):
 		m = X.shape[0]
 		if m > batch_size:
-			indices = np.arange(m)
-			indices = np.random.permutation(indices)[:batch_size]
+			# indices = np.arange(m)
+			# indices = np.random.permutation(indices)[:batch_size]
+
+			indices = np.arange(100)
+
 			X_batch = X[indices, :]
 			Y_batch = Y[indices, :]
 			return X_batch, Y_batch
 		else:
 			return X, Y
 
-	def __measure_performance(self, X_train, Y_train, X_cv, Y_cv, theta):
+	def __measure_performance(self, X_train, Y_train, theta, X_cv=None, Y_cv=None):
 		self.__epoch_list.append(self.__epoch)
 
 		self.__train_cost_list.append(self.__get_cost(X_train, Y_train, theta))
@@ -264,10 +350,11 @@ class LogisticRegression5:
 		self.__train_accuracy_list.append(self.__get_accuracy(train_predictions, Y_train))
 		self.__train_f1_list.append(self.__get_f1_score(train_predictions, Y_train))
 
-		self.__cv_cost_list.append(self.__get_cost(X_cv, Y_cv, theta))
-		cv_predictions = self.__PREDICT(X_cv @ theta)
-		self.__cv_accuracy_list.append(self.__get_accuracy(cv_predictions, Y_cv))
-		self.__cv_f1_list.append(self.__get_f1_score(cv_predictions, Y_cv))
+		if self.__is_cv:
+			self.__cv_cost_list.append(self.__get_cost(X_cv, Y_cv, theta))
+			cv_predictions = self.__PREDICT(X_cv @ theta)
+			self.__cv_accuracy_list.append(self.__get_accuracy(cv_predictions, Y_cv))
+			self.__cv_f1_list.append(self.__get_f1_score(cv_predictions, Y_cv))
 
 	def __get_cost(self, X, Y, theta):
 		m = X.shape[0]
@@ -355,30 +442,31 @@ class LogisticRegression5:
 		self.__ax_train_f1.set_title('Training: Start Cell %d\nF1 Score at Epoch %d: %.3f' %
 			(self.__current_label, self.__epoch_list[-1], self.__train_f1_list[-1]))
 
-		# CV: Cost vs Epoch
-		self.__ax_cv_cost.clear()
-		self.__ax_cv_cost.plot(self.__epoch_list, self.__cv_cost_list)
-		self.__ax_cv_cost.fill_between(self.__epoch_list, 0, self.__cv_cost_list, facecolor='blue', alpha=0.5)
-		self.__ax_cv_cost.set_xlabel('Epoch')
-		self.__ax_cv_cost.set_ylabel('Cost')
-		self.__ax_cv_cost.set_title('Cross Validation: Start Cell %d\nCost at Epoch %d: %.3f' %
-			(self.__current_label, self.__epoch_list[-1], self.__cv_cost_list[-1]))
-		# CV: Prediction Accuracy vs Epoch
-		self.__ax_cv_accuracy.clear()
-		self.__ax_cv_accuracy.plot(self.__epoch_list, self.__cv_accuracy_list)
-		self.__ax_cv_accuracy.fill_between(self.__epoch_list, 0, self.__cv_accuracy_list, facecolor='cyan', alpha=0.5)
-		self.__ax_cv_accuracy.set_xlabel('Epoch')
-		self.__ax_cv_accuracy.set_ylabel('Accuracy')
-		self.__ax_cv_accuracy.set_title('Cross Validation: Start Cell %d\nPrediction Accuracy at Epoch %d: %.3f' %
-			(self.__current_label, self.__epoch_list[-1], self.__cv_accuracy_list[-1]))
-		# CV: F1 Score vs Epoch
-		self.__ax_cv_f1.clear()
-		self.__ax_cv_f1.plot(self.__epoch_list, self.__cv_f1_list)
-		self.__ax_cv_f1.fill_between(self.__epoch_list, 0, self.__cv_f1_list, facecolor='red', alpha=0.5)
-		self.__ax_cv_f1.set_xlabel('Epoch')
-		self.__ax_cv_f1.set_ylabel('F1 Score')
-		self.__ax_cv_f1.set_title('Cross Validation: Start Cell %d\nF1 Score at Epoch %d: %.3f' %
-			(self.__current_label, self.__epoch_list[-1], self.__cv_f1_list[-1]))
+		if self.__is_cv:
+			# CV: Cost vs Epoch
+			self.__ax_cv_cost.clear()
+			self.__ax_cv_cost.plot(self.__epoch_list, self.__cv_cost_list)
+			self.__ax_cv_cost.fill_between(self.__epoch_list, 0, self.__cv_cost_list, facecolor='blue', alpha=0.5)
+			self.__ax_cv_cost.set_xlabel('Epoch')
+			self.__ax_cv_cost.set_ylabel('Cost')
+			self.__ax_cv_cost.set_title('Cross Validation: Start Cell %d\nCost at Epoch %d: %.3f' %
+				(self.__current_label, self.__epoch_list[-1], self.__cv_cost_list[-1]))
+			# CV: Prediction Accuracy vs Epoch
+			self.__ax_cv_accuracy.clear()
+			self.__ax_cv_accuracy.plot(self.__epoch_list, self.__cv_accuracy_list)
+			self.__ax_cv_accuracy.fill_between(self.__epoch_list, 0, self.__cv_accuracy_list, facecolor='cyan', alpha=0.5)
+			self.__ax_cv_accuracy.set_xlabel('Epoch')
+			self.__ax_cv_accuracy.set_ylabel('Accuracy')
+			self.__ax_cv_accuracy.set_title('Cross Validation: Start Cell %d\nPrediction Accuracy at Epoch %d: %.3f' %
+				(self.__current_label, self.__epoch_list[-1], self.__cv_accuracy_list[-1]))
+			# CV: F1 Score vs Epoch
+			self.__ax_cv_f1.clear()
+			self.__ax_cv_f1.plot(self.__epoch_list, self.__cv_f1_list)
+			self.__ax_cv_f1.fill_between(self.__epoch_list, 0, self.__cv_f1_list, facecolor='red', alpha=0.5)
+			self.__ax_cv_f1.set_xlabel('Epoch')
+			self.__ax_cv_f1.set_ylabel('F1 Score')
+			self.__ax_cv_f1.set_title('Cross Validation: Start Cell %d\nF1 Score at Epoch %d: %.3f' %
+				(self.__current_label, self.__epoch_list[-1], self.__cv_f1_list[-1]))
 
 	def __save_plots(self):
 		filename = self.__PLOTS_DIRECTORY + 'Training Performance on Start Cell %d' % self.__current_label
@@ -392,6 +480,9 @@ class LogisticRegression5:
 		
 	def __write_parameters_to_file(self, filename='param.dat'):
 		print('Writing model parameters in ' + Fore.BLUE + filename + Fore.RESET)
+
+		print('theta.shape = ', self.__theta.shape)
+
 		with open(filename, 'wb') as file:
 			np.savetxt(file, self.__theta, delimiter=',')
 		
