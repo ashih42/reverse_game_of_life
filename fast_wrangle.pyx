@@ -1,4 +1,5 @@
-# cython: language_level=3
+#cython: language_level=3
+#cython: boundscheck=False, wraparound=False, nonecheck=False
 
 import numpy as np
 
@@ -10,7 +11,7 @@ cdef clamp(int x, int low, int high):
 # looking at 11 x 11 area
 
 
-HALF_STRIDE = 0
+HALF_STRIDE = 5
 AREA_WIDTH = HALF_STRIDE * 2 + 1
 
 cpdef format_X(X):

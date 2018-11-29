@@ -38,7 +38,7 @@ def ft_exp(x):
 class LogisticRegression5:
 	np.random.seed(42)
 	# __NUM_FEATURES = 11*11 + 2
-	__NUM_FEATURES = 1*1 + 2
+	__NUM_FEATURES = 11*11 + 2
 	__NUM_LABELS = 400
 
 	# __NUM_FEATURES = 402			# try with just the given data, no new features
@@ -108,7 +108,9 @@ class LogisticRegression5:
 		for i in range(400):
 			X_test_subset = X_test[i, :, :]
 
-			theta_col = self.__theta[:, i].reshape(self.__theta.shape[0], 1)
+			# theta_col = self.__theta[:, i].reshape(self.__theta.shape[0], 1)
+			theta_col = self.__theta[:, i:i+1]
+			# theta_col = theta_col[:, np.newaxis]
 
 			# print('X_test_subset.shape = ', X_test_subset.shape)
 			predictions[:, i] = self.__PREDICT(X_test_subset @ theta_col).flatten()
@@ -263,14 +265,16 @@ class LogisticRegression5:
 
 			X_train_subset = X_train[i, :, :]
 
-			Y_train_col = Y_train[:, i]
-			Y_train_col = Y_train_col.reshape(Y_train_col.shape[0], 1)
+			Y_train_col = Y_train[:, i:i+1]
+			# Y_train_col = Y_train_col.reshape(Y_train_col.shape[0], 1)
+			# Y_train_col = Y_train_col[:, np.newaxis]
 
 			if self.__is_cv:
 				X_cv_subset = X_cv[i, :, :]
 
-				Y_cv_col = Y_cv[:, i]
-				Y_cv_col = Y_cv_col.reshape(Y_cv_col.shape[0], 1)
+				Y_cv_col = Y_cv[:, i:i+1]
+				# Y_cv_col = Y_cv_col.reshape(Y_cv_col.shape[0], 1)
+				# Y_cv_col = Y_cv_col[:, np.newaxis]
 			else:
 				X_cv_subset = None
 				Y_cv_col = None
