@@ -8,7 +8,7 @@ from solver import Solver
 
 def main():
 	if len(sys.argv) != 3:
-		print('usage: ' + Fore.RED + 'python3' + Fore.BLUE + ' train.py ' + Fore.RESET + '( LR | RF ) training_data.csv')
+		print('usage: ' + Fore.RED + 'python3' + Fore.BLUE + ' train.py ' + Fore.RESET + '( LR | DT | RF ) training_data.csv')
 		sys.exit(-1)
 	
 	model_type = sys.argv[1]

@@ -5,11 +5,14 @@ import os
 from cy_wrangle import process_data_file
 from exceptions import SolverException
 from logistic_regression import LogisticRegression
+from decision_tree import DecisionTree
 from measures import get_accuracy, get_f1_score
 
-def init_model(model_type):
+def init_model(model_type, delta, area_width):
 	if model_type == 'LR':
-		return LogisticRegression()
+		return LogisticRegression(delta, area_width)
+	elif model_type == 'DT':
+		return DecisionTree(delta)
 	elif model_type == 'RF':
 		pass
 	else:
@@ -41,18 +44,24 @@ class Solver:
 	__IS_CV = os.getenv('RGOL_CV') == 'TRUE'
 
 	def __init__(self, model_type, param_files=None):
+		if model_type == 'LR':
+			self.__half_stride = 5
+		elif model_type == 'DT':
+			self.__half_stride = 3
+
+		area_width = self.__half_stride * 2 + 1
+
 		self.__models = []
 		for i in range(self.__DELTA_RANGE):
-			self.__models.append( init_model(model_type) )
+			self.__models.append( init_model(model_type, i + 1, area_width) )
 
 		if param_files is not None:
-			assert len(param_files) == self.__DELTA_RANGE
 			for i in range(self.__DELTA_RANGE):
-				param_file = param_files[i]
-				self.__models[i].load_param(param_file)
+				self.__models[i].load_param(param_files[i])
 
 	def train(self, filename):
-		X, Y = process_data_file(filename, is_training_data=True)
+
+		X, Y = process_data_file(filename, self.__half_stride, is_training_data=True)
 
 		for i in range(self.__DELTA_RANGE):
 			delta = i + 1
@@ -68,7 +77,8 @@ class Solver:
 				X_cv = None
 				Y_cv = None
 
-			self.__models[i].fit(X_delta_i, Y_delta_i, X_cv, Y_cv, self.__IS_CV)
+			print('Training model for delta = %d' % delta)
+			self.__models[i].fit(X_train, Y_train, X_cv, Y_cv, self.__IS_CV)
 
 		self.__measure_performance(X, Y)
 
@@ -83,13 +93,14 @@ class Solver:
 	def __get_predictions(self, X):
 		predictions = np.empty((X.shape[0], 1))
 		for i in range(self.__DELTA_RANGE):
+			print('Solver.__get_predictions() i = ', i)
 			delta = i + 1
 			row_indices = X[:, 0] == delta
 			predictions[ row_indices ] = self.__models[i].predict( X[ row_indices, 1: ] )
 		return predictions
 
 	def predict(self, filename):
-		X_test, _ = process_data_file(filename, is_training_data=False)
+		X_test, _ = process_data_file(filename, self.__half_stride, is_training_data=False)
 		predictions = self.__get_predictions(X_test)
 		predictions = predictions.reshape(-1, 400)
 		write_predictions_to_file(predictions)

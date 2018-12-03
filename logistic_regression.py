@@ -16,7 +16,6 @@ def preprocess_X(X):
 	return np.c_[ np.ones(X.shape[0]), X ]
 
 class LogisticRegression:
-	__NUM_FEATURES = 11*11 + 1
 	__NUM_LABELS = 1
 
 	__LEARNING_RATE = 0.001
@@ -30,11 +29,9 @@ class LogisticRegression:
 	__PLOTS_DIRECTORY = 'LR_Plots/'
 	__PARAM_DIRECTORY = 'LR_Param/'
 
-	__NUM_MODELS = 0
-
-	def __init__(self):
-		LogisticRegression.__NUM_MODELS += 1
-		self.__delta = LogisticRegression.__NUM_MODELS
+	def __init__(self, delta, area_width):
+		self.__delta = delta
+		self.__NUM_FEATURES = area_width ** 2 + 1
 		self.__Theta = np.zeros((self.__NUM_FEATURES, self.__NUM_LABELS))
 
 	def load_param(self, param_filename):

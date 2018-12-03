@@ -9,7 +9,7 @@ from solver import Solver
 def main():
 	if len(sys.argv) != 8:
 		print('usage: ' + Fore.RED + 'python3' + Fore.BLUE + ' predict.py ' + Fore.RESET +
-			'( LR | RF ) test_data.csv param_1.dat param_2.dat param_3.dat param_4.dat param_5.dat')
+			'( LR | DT | RF ) test_data.csv param_1.dat param_2.dat param_3.dat param_4.dat param_5.dat')
 		sys.exit(-1)
 
 	model_type = sys.argv[1]
@@ -29,8 +29,8 @@ def main():
 		print(Style.BRIGHT + Fore.RED + 'I/O Error: ' + Style.RESET_ALL + Fore.RESET + str(e))
 	except ParserException as e:
 		print(Style.BRIGHT + Fore.RED + 'ParserException: ' + Style.RESET_ALL + Fore.RESET + str(e))
-	except LogisticRegressionException as e:
-		print(Style.BRIGHT + Fore.RED + 'LogisticRegressionException: ' + Style.RESET_ALL + Fore.RESET + str(e))
+	except SolverException as e:
+		print(Style.BRIGHT + Fore.RED + 'SolverException: ' + Style.RESET_ALL + Fore.RESET + str(e))
 
 if __name__ == '__main__':
 	main()
