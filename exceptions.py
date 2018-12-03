@@ -1,5 +1,5 @@
 class ParserException(Exception):
 	pass
 
-class LogisticRegressionException(Exception):
+class SolverException(Exception):
 	pass

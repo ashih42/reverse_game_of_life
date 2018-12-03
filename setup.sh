@@ -1,3 +1,3 @@
-echo 'Compiling fast_wrangle...'
+echo 'Compiling cy_wrangle ...'
 python3 setup.py build_ext --inplace
-cython fast_wrangle.pyx -a
+cython cy_wrangle.pyx -a

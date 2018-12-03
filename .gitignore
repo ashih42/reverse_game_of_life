@@ -9,3 +9,5 @@ Plots*
 *.so
 *.html
 build
+LR_Plots
+LR_Param

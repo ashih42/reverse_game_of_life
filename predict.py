@@ -1,21 +1,30 @@
 # (☞ﾟヮﾟ)☞  predict.py
 
-from LogisticRegression5 import LogisticRegression5
-from exceptions import ParserException, LogisticRegressionException
+from exceptions import ParserException, SolverException
 from colorama import Fore, Back, Style
 import sys
 
+from solver import Solver
+
 def main():
-	# check argv
-	if len(sys.argv) != 3:
-		print('usage: ' + Fore.RED + 'python3' + Fore.BLUE + ' predict.py ' + Fore.RESET + 'param.dat test_data.csv')
+	if len(sys.argv) != 8:
+		print('usage: ' + Fore.RED + 'python3' + Fore.BLUE + ' predict.py ' + Fore.RESET +
+			'( LR | RF ) test_data.csv param_1.dat param_2.dat param_3.dat param_4.dat param_5.dat')
 		sys.exit(-1)
-	param_file = sys.argv[1]
+
+	model_type = sys.argv[1]
 	test_file = sys.argv[2]
-	# load model parameters and make predictions on test data
+	param_file_1 = sys.argv[3]
+	param_file_2 = sys.argv[4]
+	param_file_3 = sys.argv[5]
+	param_file_4 = sys.argv[6]
+	param_file_5 = sys.argv[7]
+	
 	try:
-		logistic_regression = LogisticRegression5(param_file)
-		logistic_regression.predict(test_file)
+		param_files = (param_file_1, param_file_2, param_file_3, param_file_4, param_file_5)
+		solver = Solver(model_type, param_files)
+		solver.predict(test_file)
+
 	except IOError as e:
 		print(Style.BRIGHT + Fore.RED + 'I/O Error: ' + Style.RESET_ALL + Fore.RESET + str(e))
 	except ParserException as e:
