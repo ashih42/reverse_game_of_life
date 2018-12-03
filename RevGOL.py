@@ -2,6 +2,7 @@ import RandomForest as rf
 import numpy as np
 import pandas as pd
 import math
+import testfiledelete as fr
 
 def holdout(data, ratio = 0.7):
     d = data.copy(deep = True)
@@ -82,11 +83,70 @@ def get_diff(X, Y):
             result += 1
     return result
 
+def test_6():
+    print('Reading training data...')
+    training = pd.read_csv("resources/train.csv")
+    print('Reading testing data...')
+    testing = pd.read_csv("resources/test.csv")
+
+    model_list = []
+
+    surr_cells = 7
+    training_count = 150
+    testing_count = testing.shape[0]
+
+    vx = testing.iloc[:testing_count, range(1, 402)].values
+
+    for i in range(5):
+        mor = rf.RandomForest(n_estimators=32)
+        #mor = LogisticRegression()
+
+        curr_training = training.loc[training['delta'] == i + 1]
+        train = curr_training.iloc[:training_count, range(402, 802)]
+        expected = curr_training.iloc[:training_count, range(2, 402)]
+
+        X = train.as_matrix()
+        y = expected.as_matrix()
+
+        list_x, list_y = [], []
+        cnt = 0
+        for t, r in zip(X, y):
+            print('Creating training set', i + 1, '...', cnt, '/', training_count)
+            cnt += 1
+            rx, ry = fooify2(t, r, surr_cells) #
+            list_x.extend(rx)
+            list_y.extend(ry)
+        
+        print('Fitting ML algorithm to model', i + 1, '...')
+        mor.fit(list_x, list_y)
+        model_list.append(mor)
+
+    cnt = 0
+    finish = []
+    dummy = []
+    for dt in vx:
+        print('Writing predictions...', cnt, '/', testing_count)
+        X_y = dt.tolist()
+        epochs = X_y.pop(0)
+        ddt = np.array(X_y)
+        ddt = np.reshape(ddt, (20, 20))
+        test_y = []
+        for i in range(20):
+            for j in range(20):
+                vrr = neighboring_cells(ddt, i, j, surr_cells)
+                test_y.append(vrr)
+        mor = model_list[epochs - 1]
+        V = np.array(mor.predict(test_y))
+        dummy = V.flatten()
+        finish.append(dummy)
+        cnt += 1
+    write_submission_file(finish)
+
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 def test_5():
     print('Reading training data...')
-    data = pd.read_csv("resources/train100.csv")
+    data = pd.read_csv("resources/train.csv")
     #training = data.head(100)
     #testing = data.tail(1)
     training, testing = holdout(data)
@@ -96,7 +156,7 @@ def test_5():
     model_list = []
 
     surr_cells = 7
-    training_count = 1
+    training_count = 100
     testing_count = 1000
 
     foor = [1]
@@ -126,8 +186,6 @@ def test_5():
             rx, ry = fooify2(t, r, surr_cells)
             list_x.extend(rx)
             list_y.extend(ry)
-        print(type(list_x))
-        quit()
         
         print('Fitting ML algorithm to model', i + 1, '...')
         mor.fit(list_x, list_y)
@@ -160,7 +218,7 @@ def test_5():
         cnt += 1
 
 def main():
-    test_5()
+    test_6()
 
 if __name__ == '__main__':
     main()
