@@ -62,22 +62,15 @@ class LogisticRegression:
 	def __run_gradient_descent(self, X_train, Y_train, X_cv, Y_cv):
 		for epoch in range(self.__MAX_EPOCHS):
 			self.__run_gradient_descent_step(X_train, Y_train, X_cv, Y_cv)
-
 			if self.__IS_VERBOSE or self.__IS_PLOTS:
 				self.__measure_performance(epoch, X_train, Y_train, X_cv, Y_cv)
-
 			if self.__IS_VERBOSE:
 				self.__print_performance()
 
 	def __run_gradient_descent_step(self, X_train, Y_train, X_cv, Y_cv):
 		n_batches = X_train.shape[0] // self.__BATCH_SIZE
-
 		for batch_number in range(n_batches):
 			X_batch, Y_batch = self.__get_X_Y_batch(X_train, Y_train, batch_number)
-
-			# print('X_batch shape = ', X_batch.shape)
-			# print('Y_batch shape = ', Y_batch.shape)
-
 			self.__Theta = self.__Theta - self.__LEARNING_RATE * X_batch.T @ (
 				sigmoid(X_batch @ self.__Theta) - Y_batch)
 			
@@ -120,15 +113,15 @@ class LogisticRegression:
 		self.__epoch_list.append(epoch)
 
 		self.__train_cost_list.append(self.__get_cost(X_train, Y_train))
-		train_predictions = predict(X_train @ self.__Theta)
-		self.__train_accuracy_list.append(get_accuracy(train_predictions, Y_train))
-		self.__train_f1_list.append(get_f1_score(train_predictions, Y_train))
+		predictions_train = predict(X_train @ self.__Theta)
+		self.__train_accuracy_list.append(get_accuracy(predictions_train, Y_train))
+		self.__train_f1_list.append(get_f1_score(predictions_train, Y_train))
 
 		if self.__is_cv:
 			self.__cv_cost_list.append(self.__get_cost(X_cv, Y_cv))
-			cv_predictions = predict(X_cv @ self.__Theta)
-			self.__cv_accuracy_list.append(get_accuracy(cv_predictions, Y_cv))
-			self.__cv_f1_list.append(get_f1_score(cv_predictions, Y_cv))
+			predictions_cv = predict(X_cv @ self.__Theta)
+			self.__cv_accuracy_list.append(get_accuracy(predictions_cv, Y_cv))
+			self.__cv_f1_list.append(get_f1_score(predictions_cv, Y_cv))
 
 	def __get_cost(self, X, Y):
 		m = X.shape[0]

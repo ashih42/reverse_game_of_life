@@ -4,6 +4,8 @@ import numpy as np
 import pickle
 import os
 
+from measures import get_accuracy, get_f1_score
+
 def get_gini_index(left, right, class_values):
 	n_instances = left.shape[0] + right.shape[0]
 	return get_gini_index_partial(left, n_instances, class_values) + \
@@ -96,6 +98,8 @@ class DecisionTree:
 
 	__PARAM_DIRECTORY = 'DT_Param/'
 
+	__IS_VERBOSE = os.getenv('RGOL_VERBOSE') == 'TRUE'
+
 	def __init__(self, delta):
 		self.__delta = delta
 		
@@ -103,6 +107,27 @@ class DecisionTree:
 		dataset_train = np.c_[ X_train, Y_train ]
 		self.__root = build_tree(dataset_train, self.__MAX_DEPTH, self.__MIN_SIZE)
 		self.__write_parameters_to_file()
+
+		if self.__IS_VERBOSE:
+			self.__measure_performance(X_train, Y_train, X_cv, Y_cv, is_cv)
+
+	def __measure_performance(self, X_train, Y_train, X_cv, Y_cv, is_cv):
+		predictions_train = self.predict(X_train)
+		print(Fore.BLUE + 'Training:         ' + Fore.RESET +
+			'Delta = %d: Accuracy = %.6f, F1 Score = %.6f' % (
+			self.__delta,
+			get_accuracy(predictions_train, Y_train),
+			get_f1_score(predictions_train, Y_train)))
+
+		if is_cv:
+			predictions_cv = self.predict(X_cv)
+			accuracy_cv = get_accuracy(predictions_cv, Y_cv)
+			f1_score_cv = get_f1_score(predictions_cv, Y_cv)
+			print(Fore.GREEN + 'Cross Validation: ' + Fore.RESET +
+				'Delta = %d: Accuracy = %.6f, F1 Score = %.6f' % (
+				self.__delta,
+				get_accuracy(predictions_cv, Y_cv),
+				get_f1_score(predictions_cv, Y_cv)))
 
 
 	def predict(self, X):
@@ -126,8 +151,6 @@ class DecisionTree:
 		with open(filename, 'wb') as file:
 			pickle.dump(self.__root, file)
 
-		# with open(filename, 'rb') as file:
-		# 	self.__root = pickle.load(file)
 
 
 
