@@ -117,6 +117,101 @@ def get_diff(X, Y):
 # Test 7: One model for each cell and epoch. In total: 2000 models
 # Slow. Does worse than one model per epoch looking at surrounding cells
 
+def test_8():
+    print('Reading training data...')
+    data = pd.read_csv("resources/train.csv")
+    #training = data.head(100)
+    #testing = data.tail(1)
+    training, testing = holdout(data)
+    #training = data.iloc[:20, range(0, 802)]
+    #testing = data.iloc[25:26, range(0, 802)]
+
+    model_list = []
+    cool_list = []
+
+    surr_cells = 3
+    groo = 5
+    training_count = 1000
+    testing_count = 1000
+
+    foor = [1]
+    for i in range(402, 802):
+        foor.append(i)
+
+    for j in range(groo):
+        model_list = []
+        for i in range(5):
+            mor = RandomForestClassifier(n_estimators=100, random_state=0) # 0.129
+            #mor = RandomForestRegressor(n_estimators=100, random_state=0)
+            #mor = GradientBoostingClassifier(n_estimators=100, random_state=0) # 0.134
+            #mor = LogisticRegression()
+
+
+            curr_training = training.loc[training['delta'] == i + 1]
+            train = curr_training.iloc[:training_count, range(402, 802)]
+            expected = curr_training.iloc[:training_count, range(2, 402)]
+
+            X = train.as_matrix()
+            y = expected.as_matrix()
+
+            list_x, list_y = [], []
+            cnt = 0
+            for t, r in zip(X, y):
+                print('Creating training set', i + 1, '...', cnt, '/', training_count)
+                cnt += 1
+                rx, ry = fooify2(t, r, surr_cells + 2 * j)
+                list_x.extend(rx)
+                list_y.extend(ry)
+            
+            print('Fitting ML algorithm to model', i + 1, '(', surr_cells + 2 * j, '*', surr_cells + 2 * j, ')', '...')
+            mor.fit(list_x, list_y)
+            model_list.append(mor)
+        cool_list.append(model_list)
+
+
+    valid_in = testing.iloc[:testing_count, foor].values
+    valid_out = testing.iloc[:testing_count, range(2, 402)].values
+
+    result = 0
+    cnt = 0
+    for dt, ex in zip(valid_in, valid_out):
+        V = []
+        for xD in range(groo):
+            X_y = dt.tolist()
+            epochs = X_y.pop(0)
+            ddt = np.array(X_y)
+            ddt = np.reshape(ddt, (20, 20))
+            test_y = []
+            for i in range(20):
+                for j in range(20):
+                    vrr = neighboring_cells(ddt, i, j, surr_cells + xD * 2)
+                    test_y.append(vrr)
+            mor = cool_list[xD][epochs - 1]
+            justatemp = mor.predict(test_y)
+            temp3 = justatemp.flatten()
+            V.append(temp3)
+        temp = [0] * len(V[0])
+        for n in range(groo):
+            for x in range(len(V[0])):
+                if V[n][x] == 1:
+                    temp[x] += 1
+                else:
+                    temp[x] -= 1
+        for g in range(len(temp)):
+            if temp[g] > 0:
+                temp[g] = 1
+            else:
+                temp[g] = 0
+        dummy = temp
+        #print(ex)
+        #print(dummy)
+        count = get_diff(ex, dummy)
+        result += count / 400
+        print('Scoring...', cnt + 1, '=', count / 400, 'avg =', result / (cnt + 1))
+        cnt += 1
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
 def test_7():
     print('Reading training data...')
     data = pd.read_csv("repo/resources/train.csv")
@@ -195,13 +290,13 @@ def test_7():
 
 def test_6():
     print('Reading training data...')
-    training = pd.read_csv("repo/resources/train.csv")
+    training = pd.read_csv("resources/train.csv")
     print('Reading testing data...')
-    testing = pd.read_csv("repo/resources/test.csv")
+    testing = pd.read_csv("resources/test.csv")
 
     model_list = []
 
-    surr_cells = 7
+    surr_cells = 11
     training_count = 1000
     testing_count = testing.shape[0]
 
@@ -209,6 +304,7 @@ def test_6():
 
     for i in range(5):
         mor = RandomForestClassifier(n_estimators=100, random_state=0)
+        #mor = LogisticRegression()
 
         curr_training = training.loc[training['delta'] == i + 1]
         train = curr_training.iloc[:training_count, range(402, 802)]
@@ -222,7 +318,7 @@ def test_6():
         for t, r in zip(X, y):
             print('Creating training set', i + 1, '...', cnt, '/', training_count)
             cnt += 1
-            rx, ry = fooify2(t, r, surr_cells)
+            rx, ry = fooify2(t, r, surr_cells) #
             list_x.extend(rx)
             list_y.extend(ry)
         
@@ -257,7 +353,7 @@ def test_6():
 
 def test_5():
     print('Reading training data...')
-    data = pd.read_csv("repo/resources/train.csv")
+    data = pd.read_csv("resources/train.csv")
     #training = data.head(100)
     #testing = data.tail(1)
     training, testing = holdout(data)
@@ -266,7 +362,7 @@ def test_5():
 
     model_list = []
 
-    surr_cells = 7
+    surr_cells = 11
     training_count = 1000
     testing_count = 1000
 
@@ -275,10 +371,11 @@ def test_5():
         foor.append(i)
 
     for i in range(5):
-        mor = RandomForestClassifier(n_estimators=100, random_state=0) # 0.129
+        mor = RandomForestClassifier(n_estimators=100, random_state=0, verbose=2) # 0.129
         #mor = RandomForestRegressor(n_estimators=100, random_state=0)
         #mor = GradientBoostingClassifier(n_estimators=100, random_state=0) # 0.134
         #mor = LogisticRegression()
+
 
         curr_training = training.loc[training['delta'] == i + 1]
         train = curr_training.iloc[:training_count, range(402, 802)]
@@ -614,7 +711,7 @@ def test_1():
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 def main():
-    test_5()
+    test_8()
 
 if __name__ == '__main__':
     main()
