@@ -61,5 +61,7 @@ cpdef format_X(X, half_stride):
 
 		X_new[i*400:(i+1)*400, 0] = delta
 
+	print('format_X() complete!')
+
 	return X_new
 

@@ -1,12 +1,123 @@
 from colorama import Fore, Back, Style
+from multiprocessing import Process
 import numpy as np
 import os
 
 from cy_wrangle import process_data_file
 from exceptions import SolverException
 from logistic_regression import LogisticRegression
-from decision_tree import DecisionTree
+from random_forest import DecisionTree, RandomForest
 from measures import get_accuracy, get_f1_score
+
+class Solver:
+	np.random.seed(42)
+	__DELTA_RANGE = 5
+
+	__IS_CV = os.getenv('RGOL_CV') == 'TRUE'
+	__IS_MP = os.getenv('RGOL_MP') == 'TRUE'
+
+	def __init__(self, model_type):
+		if model_type == 'LR':
+			self.__half_stride = 5
+		elif model_type == 'DT':
+			self.__half_stride = 3
+		elif model_type == 'RF':
+			self.__half_stride = 3
+
+		area_width = self.__half_stride * 2 + 1
+
+		self.__models = []
+		for i in range(self.__DELTA_RANGE):
+			self.__models.append( init_model(model_type, i + 1, area_width) )
+
+		# if load_param_files:
+		# 	for model in self.__models:
+		# 		model.load_param()
+
+		# if param_files is not None:
+		# 	for i in range(self.__DELTA_RANGE):
+		# 		self.__models[i].load_param(param_files[i])
+
+	def load_param(self):
+		for model in self.__models:
+				model.load_param()
+
+	def train(self, filename):
+		X, Y = process_data_file(filename, self.__half_stride, is_training_data=True)
+		if self.__IS_MP:
+			self.__train_mp(X, Y)
+		else:
+			self.__train_sp(X, Y)
+		self.__measure_performance(X, Y)
+
+	def __train_sp(self, X, Y):
+		for i in range(self.__DELTA_RANGE):
+			delta = i + 1
+			print('Training model for delta = ', delta)
+			row_indices = X[:, 0] == delta
+			X_delta_i = X[ row_indices, 1: ]
+			Y_delta_i = Y[ row_indices, ]
+			if self.__IS_CV:
+				X_train, Y_train, X_cv, Y_cv = generate_train_cv_sets(X_delta_i, Y_delta_i)
+			else:
+				X_train = X_delta_i
+				Y_train = Y_delta_i
+				X_cv = None
+				Y_cv = None
+			self.__models[i].fit(X_train, Y_train, X_cv, Y_cv, self.__IS_CV)
+
+	def __train_mp(self, X, Y):
+		processes = []
+		for i in range(self.__DELTA_RANGE):
+			delta = i + 1
+			print('Training model for delta = ', delta)
+			processes.append(Thread(target=train_process, args=(X, Y, delta, self.__models[i], self.__IS_CV)))
+		for p in processes:
+			p.start()
+		for p in processes:
+			p.join()
+
+	def __measure_performance(self, X, Y):
+		predictions = self.__get_predictions(X)
+		accuracy = get_accuracy(predictions, Y)
+		f1_score = get_f1_score(predictions, Y)
+		print(Style.BRIGHT + 'Performance on entire dataset: ' +Style.RESET_ALL +
+			'Accuracy = %.6f, F1 Score = %.6f' % (accuracy, f1_score))
+
+	def __get_predictions(self, X):
+		predictions = np.empty((X.shape[0], 1))
+		if self.__IS_MP:
+			self.__get_predictions_mp(X, predictions)
+		else:
+			self.__get_predictions_sp(X, predictions)
+		return predictions
+
+	def __get_predictions_sp(self, X, predictions):
+		for i in range(self.__DELTA_RANGE):
+			delta = i + 1
+			print('Predicting where delta = ', delta)
+			row_indices = X[:, 0] == delta
+			predictions[ row_indices ] = self.__models[i].predict( X[ row_indices, 1: ] )
+
+	def __get_predictions_mp(self, X, predictions):
+		processes = []
+		for i in range(self.__DELTA_RANGE):
+			delta = i + 1
+			print('Predicting where delta = ', delta)
+			processes.append(Process(target=predict_process, args=(X, predictions, delta, self.__models[i])))
+		for p in processes:
+			p.start()
+		for p in processes:
+			p.join()
+
+	def predict(self, filename):
+		X_test, _ = process_data_file(filename, self.__half_stride, is_training_data=False)
+		
+		predictions = self.__get_predictions(X_test)
+
+		predictions = predictions.reshape(-1, 400)
+		write_predictions_to_file(predictions)
+
 
 def init_model(model_type, delta, area_width):
 	if model_type == 'LR':
@@ -14,7 +125,7 @@ def init_model(model_type, delta, area_width):
 	elif model_type == 'DT':
 		return DecisionTree(delta)
 	elif model_type == 'RF':
-		pass
+		return RandomForest(delta)
 	else:
 		raise SolverException('Invalid model type: ' + Fore.MAGENTA + model_type + Fore.RESET)
 
@@ -29,6 +140,23 @@ def generate_train_cv_sets(X, Y, percent_train=0.7):
 	
 	return X_train, Y_train, X_cv, Y_cv
 
+def predict_process(X, predictions, delta, model):
+	row_indices = X[:, 0] == delta
+	predictions[ row_indices ] = model.predict( X[ row_indices, 1: ] )
+
+def train_process(X, Y, delta, model, is_cv):
+	row_indices = X[:, 0] == delta
+	X_delta_i = X[ row_indices, 1: ]
+	Y_delta_i = Y[ row_indices, ]
+	if is_cv:
+		X_train, Y_train, X_cv, Y_cv = generate_train_cv_sets(X_delta_i, Y_delta_i)
+	else:
+		X_train = X_delta_i
+		Y_train = Y_delta_i
+		X_cv = None
+		Y_cv = None
+	model.fit(X_train, Y_train, X_cv, Y_cv, is_cv)
+
 def write_predictions_to_file(predictions, filename='submission.csv'):
 	print('Writing predictions in ' + Fore.BLUE + filename + Fore.RESET)
 	with open(filename, 'wb') as file:
@@ -36,83 +164,6 @@ def write_predictions_to_file(predictions, filename='submission.csv'):
 		id_column = np.arange(predictions.shape[0]) + 1				# insert 'id' at column 0
 		predictions = np.c_[id_column, predictions]
 		np.savetxt(file, predictions.astype(int), fmt='%i', delimiter=',')
-
-class Solver:
-	np.random.seed(42)
-	__DELTA_RANGE = 5
-
-	__IS_CV = os.getenv('RGOL_CV') == 'TRUE'
-
-	def __init__(self, model_type, param_files=None):
-		if model_type == 'LR':
-			self.__half_stride = 5
-		elif model_type == 'DT':
-			self.__half_stride = 3
-
-		area_width = self.__half_stride * 2 + 1
-
-		self.__models = []
-		for i in range(self.__DELTA_RANGE):
-			self.__models.append( init_model(model_type, i + 1, area_width) )
-
-		if param_files is not None:
-			for i in range(self.__DELTA_RANGE):
-				self.__models[i].load_param(param_files[i])
-
-	def train(self, filename):
-
-		X, Y = process_data_file(filename, self.__half_stride, is_training_data=True)
-
-		for i in range(self.__DELTA_RANGE):
-			delta = i + 1
-			row_indices = X[:, 0] == delta
-			X_delta_i = X[ row_indices, 1: ]
-			Y_delta_i = Y[ row_indices, ]
-
-			if self.__IS_CV:
-				X_train, Y_train, X_cv, Y_cv = generate_train_cv_sets(X_delta_i, Y_delta_i)
-			else:
-				X_train = X_delta_i
-				Y_train = Y_delta_i
-				X_cv = None
-				Y_cv = None
-
-			print('Training model for delta = %d' % delta)
-			self.__models[i].fit(X_train, Y_train, X_cv, Y_cv, self.__IS_CV)
-
-		self.__measure_performance(X, Y)
-
-	def __measure_performance(self, X, Y):
-		predictions = self.__get_predictions(X)
-		accuracy = get_accuracy(predictions, Y)
-		f1_score = get_f1_score(predictions, Y)
-
-		print(Style.BRIGHT + 'Performance on entire dataset: ' +Style.RESET_ALL +
-			'Accuracy = %.6f, F1 Score = %.6f' % (accuracy, f1_score))
-
-	def __get_predictions(self, X):
-		predictions = np.empty((X.shape[0], 1))
-		for i in range(self.__DELTA_RANGE):
-			print('Solver.__get_predictions() i = ', i)
-			delta = i + 1
-			row_indices = X[:, 0] == delta
-			predictions[ row_indices ] = self.__models[i].predict( X[ row_indices, 1: ] )
-		return predictions
-
-	def predict(self, filename):
-		X_test, _ = process_data_file(filename, self.__half_stride, is_training_data=False)
-		predictions = self.__get_predictions(X_test)
-		predictions = predictions.reshape(-1, 400)
-		write_predictions_to_file(predictions)
-
-
-
-		
-
-
-
-
-
 
 
 

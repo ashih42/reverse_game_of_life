@@ -7,22 +7,17 @@ import sys
 from solver import Solver
 
 def main():
-	if len(sys.argv) != 8:
+	if len(sys.argv) != 3:
 		print('usage: ' + Fore.RED + 'python3' + Fore.BLUE + ' predict.py ' + Fore.RESET +
-			'( LR | DT | RF ) test_data.csv param_1.dat param_2.dat param_3.dat param_4.dat param_5.dat')
+			'( LR | DT | RF ) test_data.csv')
 		sys.exit(-1)
 
 	model_type = sys.argv[1]
 	test_file = sys.argv[2]
-	param_file_1 = sys.argv[3]
-	param_file_2 = sys.argv[4]
-	param_file_3 = sys.argv[5]
-	param_file_4 = sys.argv[6]
-	param_file_5 = sys.argv[7]
 	
 	try:
-		param_files = (param_file_1, param_file_2, param_file_3, param_file_4, param_file_5)
-		solver = Solver(model_type, param_files)
+		solver = Solver(model_type)
+		solver.load_param()
 		solver.predict(test_file)
 
 	except IOError as e:

@@ -34,7 +34,9 @@ class LogisticRegression:
 		self.__NUM_FEATURES = area_width ** 2 + 1
 		self.__Theta = np.zeros((self.__NUM_FEATURES, self.__NUM_LABELS))
 
-	def load_param(self, param_filename):
+	def load_param(self):
+		param_filename = self.__PARAM_DIRECTORY + 'param_%d.dat' % self.__delta
+		# print('Loading model parameters in ' + Fore.BLUE + param_filename + Fore.RESET)
 		parser = MatrixDataParser(param_filename, num_rows=self.__NUM_FEATURES, num_cols=self.__NUM_LABELS)
 		self.__Theta = np.array(parser.data, dtype = float)
 
