@@ -2,27 +2,30 @@ Bonus:
 
 - Authentic Game of Life simulator!
 
+- Select 3 different models at run-time!
+  - Logistic Regression
+  - Decision Tree
+  - Random Forest
 
 
 
-- Phat-ass UML diagram!
-- Mini-batch gradient descent!
+- Compiled Cython module!
+
+- Multi-processing!
+
 - Cross-validation!
+
+- Mini-batch gradient descent!
+
+- Cross-validation!
+
 - Meaningful performance measurements!
+
 - Superbly formatted logs!
+
 - Beautiful plots!
+
 - Robust error-handling!
 
+- Phat-ass UML diagram!
 
-
-
-- Overfitting?
-
-
-- Neural Network?
-
-
-- Principal Component Analysis
-
-
-- custom batch size at run time

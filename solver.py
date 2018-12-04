@@ -15,6 +15,7 @@ class Solver:
 
 	__IS_CV = os.getenv('RGOL_CV') == 'TRUE'
 	__IS_MP = os.getenv('RGOL_MP') == 'TRUE'
+	__IS_VERBOSE = os.getenv('RGOL_VERBOSE') == 'TRUE'
 
 	def __init__(self, model_type):
 		if model_type == 'LR':
@@ -30,17 +31,9 @@ class Solver:
 		for i in range(self.__DELTA_RANGE):
 			self.__models.append( init_model(model_type, i + 1, area_width) )
 
-		# if load_param_files:
-		# 	for model in self.__models:
-		# 		model.load_param()
-
-		# if param_files is not None:
-		# 	for i in range(self.__DELTA_RANGE):
-		# 		self.__models[i].load_param(param_files[i])
-
 	def load_param(self):
 		for model in self.__models:
-				model.load_param()
+			model.load_param()
 
 	def train(self, filename):
 		X, Y = process_data_file(filename, self.__half_stride, is_training_data=True)
@@ -48,7 +41,8 @@ class Solver:
 			self.__train_mp(X, Y)
 		else:
 			self.__train_sp(X, Y)
-		self.__measure_performance(X, Y)
+		if self.__IS_VERBOSE:
+			self.__measure_performance(X, Y)
 
 	def __train_sp(self, X, Y):
 		for i in range(self.__DELTA_RANGE):
@@ -112,12 +106,9 @@ class Solver:
 
 	def predict(self, filename):
 		X_test, _ = process_data_file(filename, self.__half_stride, is_training_data=False)
-		
 		predictions = self.__get_predictions(X_test)
-
 		predictions = predictions.reshape(-1, 400)
 		write_predictions_to_file(predictions)
-
 
 def init_model(model_type, delta, area_width):
 	if model_type == 'LR':

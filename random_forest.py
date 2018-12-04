@@ -93,11 +93,11 @@ def predict(row, node):
 			return node['right']
 
 class RandomForest:
-	__MAX_DEPTH = 5
+	__MAX_DEPTH = 10
 	__MIN_SIZE = 10
-	__SAMPLE_SIZE = 0.01
-	__N_FEATURES = 10
-	__N_TREES = 4
+	__SAMPLE_RATIO = 0.01
+	__N_FEATURES = 20
+	__N_TREES = 100
 
 	__PARAM_DIRECTORY = 'RF_Param/'
 
@@ -123,7 +123,7 @@ class RandomForest:
 		self.__trees = []
 		tree_id = 0
 		for tree in range(self.__N_TREES):
-			param_filename = self.__PARAM_DIRECTORY + 'param_%d_%02d.dat' % (self.__delta, tree_id)
+			param_filename = self.__PARAM_DIRECTORY + 'param_%d_%03d.dat' % (self.__delta, tree_id)
 			print('Loading model parameters in ' + Fore.BLUE + param_filename + Fore.RESET)
 			with open(param_filename, 'rb') as file:
 				self.__trees.append(pickle.load(file))
@@ -134,7 +134,7 @@ class RandomForest:
 			os.stat(self.__PARAM_DIRECTORY)
 		except:
 			os.mkdir(self.__PARAM_DIRECTORY)
-		filename = self.__PARAM_DIRECTORY + 'param_%d_%02d.dat' % (self.__delta, tree_id)
+		filename = self.__PARAM_DIRECTORY + 'param_%d_%03d.dat' % (self.__delta, tree_id)
 		print('Writing model parameters in ' + Fore.BLUE + filename + Fore.RESET)
 		with open(filename, 'wb') as file:
 			pickle.dump(tree, file)
@@ -160,7 +160,7 @@ class RandomForest:
 		# select random sample subset from dataset
 		sample_indices = np.arange(dataset.shape[0])
 		np.random.shuffle(sample_indices)
-		sample_indices = sample_indices[ :int(self.__SAMPLE_SIZE * sample_indices.shape[0]) ]
+		sample_indices = sample_indices[ :int(self.__SAMPLE_RATIO * sample_indices.shape[0]) ]
 		dataset_sample = dataset[ sample_indices ]
 
 		# select random feature indices
@@ -173,7 +173,10 @@ class RandomForest:
 
 	def predict(self, X):
 		sum_predictions = np.zeros((X.shape[0], 1))
+		tree_id = 0
 		for tree in self.__trees:
+			print('RandomForest.predict(): tree_id = ', tree_id)
+			tree_id += 1
 			sum_predictions += np.apply_along_axis(predict, 1, X, tree).reshape(-1, 1)
 		return (sum_predictions >= self.__N_TREES / 2).astype(int)
 
@@ -193,7 +196,6 @@ class DecisionTree:
 		feature_indices = np.arange(X_train.shape[1])
 		self.__root = build_tree(dataset_train, self.__MAX_DEPTH, self.__MIN_SIZE, feature_indices)
 		self.__write_parameters_to_file()
-
 		if self.__IS_VERBOSE:
 			self.__measure_performance(X_train, Y_train, X_cv, Y_cv, is_cv)
 
