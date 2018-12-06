@@ -98,7 +98,6 @@ class RandomForest:
 	__SAMPLE_RATIO = 0.01
 	__N_FEATURES = 20
 	__N_TREES = 100
-
 	__PARAM_DIRECTORY = 'RF_Param/'
 
 	__IS_CV = os.getenv('RGOL_CV') == 'TRUE'
@@ -163,14 +162,11 @@ class RandomForest:
 		np.random.shuffle(sample_indices)
 		sample_indices = sample_indices[ :int(self.__SAMPLE_RATIO * sample_indices.shape[0]) ]
 		dataset_sample = dataset[ sample_indices ]
-
 		# select random feature indices
 		feature_indices = np.arange(dataset.shape[1] - 1)
 		np.random.shuffle(feature_indices)
 		feature_indices = feature_indices[ :self.__N_FEATURES ]
-
 		return build_tree(dataset_sample, self.__MAX_DEPTH, self.__MIN_SIZE, feature_indices)
-
 
 	def predict(self, X):
 		sum_predictions = np.zeros((X.shape[0], 1))
@@ -184,7 +180,6 @@ class RandomForest:
 class DecisionTree:
 	__MAX_DEPTH = 5
 	__MIN_SIZE = 10
-
 	__PARAM_DIRECTORY = 'DT_Param/'
 
 	__IS_CV = os.getenv('RGOL_CV') == 'TRUE'
