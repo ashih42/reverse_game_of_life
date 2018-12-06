@@ -11,3 +11,7 @@ Plots*
 build
 LR_Plots
 LR_Param
+*.avi
+*.pdf
+RF_Param
+DT_Param
