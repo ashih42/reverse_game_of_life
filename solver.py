@@ -24,7 +24,8 @@ class Solver:
 			self.__half_stride = 3
 		elif model_type == 'RF':
 			self.__half_stride = 3
-
+		else:
+			raise SolverException('Invalid model type: ' + Fore.MAGENTA + model_type + Fore.RESET)
 		area_width = self.__half_stride * 2 + 1
 
 		self.__models = []
@@ -58,14 +59,14 @@ class Solver:
 				Y_train = Y_delta_i
 				X_cv = None
 				Y_cv = None
-			self.__models[i].fit(X_train, Y_train, X_cv, Y_cv, self.__IS_CV)
+			self.__models[i].fit(X_train, Y_train, X_cv, Y_cv)
 
 	def __train_mp(self, X, Y):
 		processes = []
 		for i in range(self.__DELTA_RANGE):
 			delta = i + 1
 			print('Training model for delta = ', delta)
-			processes.append(Thread(target=train_process, args=(X, Y, delta, self.__models[i], self.__IS_CV)))
+			processes.append(Process(target=train_process, args=(X, Y, delta, self.__models[i], self.__IS_CV)))
 		for p in processes:
 			p.start()
 		for p in processes:
@@ -146,7 +147,7 @@ def train_process(X, Y, delta, model, is_cv):
 		Y_train = Y_delta_i
 		X_cv = None
 		Y_cv = None
-	model.fit(X_train, Y_train, X_cv, Y_cv, is_cv)
+	model.fit(X_train, Y_train, X_cv, Y_cv)
 
 def write_predictions_to_file(predictions, filename='submission.csv'):
 	print('Writing predictions in ' + Fore.BLUE + filename + Fore.RESET)

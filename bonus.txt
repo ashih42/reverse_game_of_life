@@ -7,17 +7,13 @@ Bonus:
   - Decision Tree
   - Random Forest
 
-
-
 - Compiled Cython module!
 
-- Multi-processing!
+- Experimental multi-processing!
 
-- Cross-validation!
+- Optional cross-validation!
 
-- Mini-batch gradient descent!
-
-- Cross-validation!
+- (Logistic Regression) Mini-batch gradient descent!
 
 - Meaningful performance measurements!
 

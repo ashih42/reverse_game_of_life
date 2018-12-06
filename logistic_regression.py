@@ -19,10 +19,12 @@ class LogisticRegression:
 	__NUM_LABELS = 1
 
 	__LEARNING_RATE = 0.001
-	__MAX_EPOCHS = 10
+	
+	__MAX_EPOCHS = 20
 	
 	__BATCH_SIZE = 100
 
+	__IS_CV = os.getenv('RGOL_CV') == 'TRUE'
 	__IS_VERBOSE = os.getenv('RGOL_VERBOSE') == 'TRUE'
 	__IS_PLOTS = os.getenv('RGOL_PLOTS') == 'TRUE'
 
@@ -44,21 +46,16 @@ class LogisticRegression:
 		X = preprocess_X(X)
 		return predict(X @ self.__Theta)
 
-	def fit(self, X_train, Y_train, X_cv, Y_cv, is_cv):
+	def fit(self, X_train, Y_train, X_cv, Y_cv):
 		self.__init_lists()
-		self.__init_plots()
-		
 		X_train = preprocess_X(X_train)
-		self.__is_cv = is_cv
-		if self.__is_cv:
-			X_cv = preprocess_X(X_cv)
-		
+		if self.__IS_CV:
+			X_cv = preprocess_X(X_cv)		
 		self.__run_gradient_descent(X_train, Y_train, X_cv, Y_cv)
-
 		if self.__IS_PLOTS:
+			self.__init_plots()
 			self.__update_plots()
 			self.__save_plots()
-		
 		self.__write_parameters_to_file()
 
 	def __run_gradient_descent(self, X_train, Y_train, X_cv, Y_cv):
@@ -83,53 +80,23 @@ class LogisticRegression:
 		Y_batch = Y[ low:high, : ]
 		return X_batch, Y_batch
 
-	def __init_plots(self):
-		try:
-			os.stat(self.__PLOTS_DIRECTORY)
-		except:
-			os.mkdir(self.__PLOTS_DIRECTORY)
-		
-		self.__fig = plt.figure(figsize=(18, 12))
-		self.__fig.tight_layout()
-		
-		self.__ax_train_cost = self.__fig.add_subplot(2, 3, 1)
-		self.__ax_train_accuracy = self.__fig.add_subplot(2, 3, 2)
-		self.__ax_train_f1 = self.__fig.add_subplot(2, 3, 3)
-		
-		self.__ax_cv_cost = self.__fig.add_subplot(2, 3, 4)
-		self.__ax_cv_accuracy = self.__fig.add_subplot(2, 3, 5)
-		self.__ax_cv_f1 = self.__fig.add_subplot(2, 3, 6)
-
-	def __init_lists(self):
-		self.__epoch_list = []
-
-		self.__train_cost_list = []
-		self.__train_accuracy_list = []
-		self.__train_f1_list = []
-
-		self.__cv_cost_list = []
-		self.__cv_accuracy_list = []
-		self.__cv_f1_list = []
+	def __get_cost(self, X, Y):
+		m = X.shape[0]
+		return 1 / m * np.sum(
+			-Y * np.log(sigmoid(X @ self.__Theta)) -
+			(1 - Y) * (np.log(sigmoid(1 - (X @ self.__Theta)))))
 
 	def __measure_performance(self, epoch, X_train, Y_train, X_cv, Y_cv):
 		self.__epoch_list.append(epoch)
-
 		self.__train_cost_list.append(self.__get_cost(X_train, Y_train))
 		predictions_train = predict(X_train @ self.__Theta)
 		self.__train_accuracy_list.append(get_accuracy(predictions_train, Y_train))
 		self.__train_f1_list.append(get_f1_score(predictions_train, Y_train))
-
-		if self.__is_cv:
+		if self.__IS_CV:
 			self.__cv_cost_list.append(self.__get_cost(X_cv, Y_cv))
 			predictions_cv = predict(X_cv @ self.__Theta)
 			self.__cv_accuracy_list.append(get_accuracy(predictions_cv, Y_cv))
 			self.__cv_f1_list.append(get_f1_score(predictions_cv, Y_cv))
-
-	def __get_cost(self, X, Y):
-		m = X.shape[0]
-		return 1 / m * np.sum(np.sum(
-			-Y * np.log(sigmoid(X @ self.__Theta)) -
-			(1 - Y) * (np.log(sigmoid(1 - (X @ self.__Theta))))))
 
 	def __print_performance(self):
 		print(Fore.BLUE + 'Training:         ' + Fore.RESET +
@@ -139,8 +106,7 @@ class LogisticRegression:
 			self.__train_cost_list[-1],
 			self.__train_accuracy_list[-1],
 			self.__train_f1_list[-1]))
-
-		if self.__is_cv:
+		if self.__IS_CV:
 			print(Fore.GREEN + 'Cross Validation: ' + Fore.RESET +
 				'Delta = %d: Epoch = %d, Cost = %.6f, Accuracy = %.6f, F1 Score = %.6f' % (
 				self.__delta,
@@ -148,6 +114,29 @@ class LogisticRegression:
 				self.__cv_cost_list[-1],
 				self.__cv_accuracy_list[-1],
 				self.__cv_f1_list[-1]))
+
+	def __init_lists(self):
+		self.__epoch_list = []
+		self.__train_cost_list = []
+		self.__train_accuracy_list = []
+		self.__train_f1_list = []
+		self.__cv_cost_list = []
+		self.__cv_accuracy_list = []
+		self.__cv_f1_list = []
+
+	def __init_plots(self):
+		try:
+			os.stat(self.__PLOTS_DIRECTORY)
+		except:
+			os.mkdir(self.__PLOTS_DIRECTORY)
+		self.__fig = plt.figure(figsize=(18, 12))
+		self.__fig.tight_layout()
+		self.__ax_train_cost = self.__fig.add_subplot(2, 3, 1)
+		self.__ax_train_accuracy = self.__fig.add_subplot(2, 3, 2)
+		self.__ax_train_f1 = self.__fig.add_subplot(2, 3, 3)
+		self.__ax_cv_cost = self.__fig.add_subplot(2, 3, 4)
+		self.__ax_cv_accuracy = self.__fig.add_subplot(2, 3, 5)
+		self.__ax_cv_f1 = self.__fig.add_subplot(2, 3, 6)
 
 	def __update_plots(self):
 		# Training: Cost vs Epoch
@@ -174,8 +163,7 @@ class LogisticRegression:
 		self.__ax_train_f1.set_ylabel('F1 Score')
 		self.__ax_train_f1.set_title('Training: Delta = %d\nF1 Score at Epoch %d: %.3f' %
 			(self.__delta, self.__epoch_list[-1], self.__train_f1_list[-1]))
-
-		if self.__is_cv:
+		if self.__IS_CV:
 			# CV: Cost vs Epoch
 			self.__ax_cv_cost.clear()
 			self.__ax_cv_cost.plot(self.__epoch_list, self.__cv_cost_list)

@@ -101,12 +101,13 @@ class RandomForest:
 
 	__PARAM_DIRECTORY = 'RF_Param/'
 
+	__IS_CV = os.getenv('RGOL_CV') == 'TRUE'
 	__IS_VERBOSE = os.getenv('RGOL_VERBOSE') == 'TRUE'
 
 	def __init__(self, delta):
 		self.__delta = delta
 
-	def fit(self, X_train, Y_train, X_cv, Y_cv, is_cv):
+	def fit(self, X_train, Y_train, X_cv, Y_cv):
 		dataset_train = np.c_[ X_train, Y_train ]
 		self.__trees = []
 		tree_id = 0
@@ -117,7 +118,7 @@ class RandomForest:
 			tree_id += 1
 
 		if self.__IS_VERBOSE:
-			self.__measure_performance(X_train, Y_train, X_cv, Y_cv, is_cv)
+			self.__measure_performance(X_train, Y_train, X_cv, Y_cv)
 
 	def load_param(self):
 		self.__trees = []
@@ -139,14 +140,14 @@ class RandomForest:
 		with open(filename, 'wb') as file:
 			pickle.dump(tree, file)
 
-	def __measure_performance(self, X_train, Y_train, X_cv, Y_cv, is_cv):
+	def __measure_performance(self, X_train, Y_train, X_cv, Y_cv):
 		predictions_train = self.predict(X_train)
 		print(Fore.BLUE + 'Training:         ' + Fore.RESET +
 			'Delta = %d: Accuracy = %.6f, F1 Score = %.6f' % (
 			self.__delta,
 			get_accuracy(predictions_train, Y_train),
 			get_f1_score(predictions_train, Y_train)))
-		if is_cv:
+		if self.__IS_CV:
 			predictions_cv = self.predict(X_cv)
 			accuracy_cv = get_accuracy(predictions_cv, Y_cv)
 			f1_score_cv = get_f1_score(predictions_cv, Y_cv)
@@ -186,27 +187,28 @@ class DecisionTree:
 
 	__PARAM_DIRECTORY = 'DT_Param/'
 
+	__IS_CV = os.getenv('RGOL_CV') == 'TRUE'
 	__IS_VERBOSE = os.getenv('RGOL_VERBOSE') == 'TRUE'
 
 	def __init__(self, delta):
 		self.__delta = delta
 
-	def fit(self, X_train, Y_train, X_cv, Y_cv, is_cv):
+	def fit(self, X_train, Y_train, X_cv, Y_cv):
 		dataset_train = np.c_[ X_train, Y_train ]
 		feature_indices = np.arange(X_train.shape[1])
 		self.__root = build_tree(dataset_train, self.__MAX_DEPTH, self.__MIN_SIZE, feature_indices)
 		self.__write_parameters_to_file()
 		if self.__IS_VERBOSE:
-			self.__measure_performance(X_train, Y_train, X_cv, Y_cv, is_cv)
+			self.__measure_performance(X_train, Y_train, X_cv, Y_cv)
 
-	def __measure_performance(self, X_train, Y_train, X_cv, Y_cv, is_cv):
+	def __measure_performance(self, X_train, Y_train, X_cv, Y_cv):
 		predictions_train = self.predict(X_train)
 		print(Fore.BLUE + 'Training:         ' + Fore.RESET +
 			'Delta = %d: Accuracy = %.6f, F1 Score = %.6f' % (
 			self.__delta,
 			get_accuracy(predictions_train, Y_train),
 			get_f1_score(predictions_train, Y_train)))
-		if is_cv:
+		if self.__IS_CV:
 			predictions_cv = self.predict(X_cv)
 			accuracy_cv = get_accuracy(predictions_cv, Y_cv)
 			f1_score_cv = get_f1_score(predictions_cv, Y_cv)
@@ -217,7 +219,6 @@ class DecisionTree:
 				get_f1_score(predictions_cv, Y_cv)))
 
 	def predict(self, X):
-		print('DecisionTree.predict(), X shape = ', X.shape)
 		return np.apply_along_axis(predict, 1, X, self.__root).reshape(-1, 1)
 
 	def load_param(self):

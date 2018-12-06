@@ -31,7 +31,7 @@ run:
 
 class GameOfLife():
 
-    def __init__(self, board=np.array([]), board_size=20, border_size=20):
+    def __init__(self, board=np.array([]), board_size=20, border_size=0):
         if board.size == 0:
             self.board_size = board_size + border_size * 2
             self.board = np.array(np.random.randint(2, size=(self.board_size, self.board_size)))
@@ -48,14 +48,20 @@ class GameOfLife():
         self.start = self.border_size
         self.end = self.board_size - self.start
 
-    def __neighboring_cells(self, x, y):
-        result = 0
+    def __count_alive_neighbors(self, x, y):
+        alive_neighbors = 0
         for i in range(-1, 2):
             for j in range(-1, 2):
-                if not i == j == 0:
-                    if x + i < self.board_size and x + i >= 0 and y + j < self.board_size and y + j >= 0:
-                        result += self.board[x + i][y + j]
-        return result
+                if i == j == 0:
+                    continue
+                neighbor_x = x + i
+                neighbor_y = y + j
+                if self.__is_valid_position(neighbor_x, neighbor_y):
+                    alive_neighbors += self.board[neighbor_x][neighbor_y]
+        return alive_neighbors
+
+    def __is_valid_position(self, x, y):
+        return 0 <= x < self.board_size and 0 <= y < self.board_size
 
     def get_limited_board(self):
         start = self.border_size
@@ -74,9 +80,9 @@ class GameOfLife():
             self.img = ax.imshow(self.board)
 
             if epochs < 0:
-                ani = animation.FuncAnimation(fig, self.__update, interval=1)
+                ani = animation.FuncAnimation(fig, self.__update, interval=10)
             else:
-                ani = animation.FuncAnimation(fig, self.__update, frames=epochs, interval=1, save_count=epochs)
+                ani = animation.FuncAnimation(fig, self.__update, frames=epochs, interval=10, save_count=epochs)
 
             if save_anim:
                 ani.save('gof.html', fps=30)
@@ -95,7 +101,7 @@ class GameOfLife():
         next_board = self.board.copy()
         for i in range(self.board_size):
             for j in range(self.board_size):
-                neighbors = self.__neighboring_cells(j, i)
+                neighbors = self.__count_alive_neighbors(j, i)
                 if self.board[j][i]:
                     if neighbors < 2 or neighbors > 3:
                         next_board[j][i] = 0
@@ -109,9 +115,29 @@ class GameOfLife():
 
 def main():
     board_i = np.array([
-        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # glider
+        # [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+        # acorn
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -120,6 +146,9 @@ def main():
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -129,18 +158,13 @@ def main():
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
     ])
     gof = GameOfLife(board=board_i, border_size=20)
-    gof.run(visual=True)
-    #for i in range(100):
-    #    print(i)
-    #    start, end = gof.run(visual=False, epochs=i)
-    #for i in start:
-    #    print(i)
-    #print('\n')
-    #    for i in end:
-    #        print(i)
-    #    print('\n')
+    # gof = GameOfLife()
+
+    # gof.run(visual=True)
+    gof.run(visual=True, save_anim=True)
 
 if __name__ == '__main__':
     main()
