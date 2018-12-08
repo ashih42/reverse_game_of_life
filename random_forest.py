@@ -82,7 +82,8 @@ def to_terminal(group):
 	count_0s = np.sum(group[:, -1] == 0)
 	count_1s = np.sum(group[:, -1] == 1)
 
-	if count_1s / (count_0s + count_1s) > 0.37:			# experimentally measured best threshold
+	# if count_1s / (count_0s + count_1s) > 0.37:			# experimentally measured best threshold from train100.csv
+	if count_1s / (count_0s + count_1s) > 0.30:
 		return 1
 	else:
 		return 0
