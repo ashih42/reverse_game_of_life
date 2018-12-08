@@ -69,13 +69,13 @@ def split(node, max_depth, min_size, feature_indices, depth):
 		node['right'] = to_terminal(right)
 		return
 	
-	if left.shape[0] <= min_size or len(feature_indices) <= 1:
+	if left.shape[0] <= min_size or len(feature_indices) == 0:
 		node['left'] = to_terminal(left)
 	else:
 		node['left'], new_feature_indices= get_split(left, feature_indices)
 		split(node['left'], max_depth, min_size, new_feature_indices, depth + 1)
 
-	if right.shape[0] <= min_size or len(feature_indices) <= 1:
+	if right.shape[0] <= min_size or len(feature_indices) == 0:
 		node['right'] = to_terminal(right)
 	else:
 		node['right'], new_feature_indices= get_split(right, feature_indices)
