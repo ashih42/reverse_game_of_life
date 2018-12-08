@@ -41,12 +41,15 @@ def get_split(dataset, feature_indices):
 			best_right = right
 	print('best index = ', best_index)
 	print('feature_indices = ', feature_indices)
-	feature_indices.remove(best_index)	# NEW SHIT
-	return {'index': best_index, 'left': best_left, 'right': best_right}
+	
+	new_feature_indices = feature_indices.copy()
+	new_feature_indices.remove(best_index)
+	
+	return {'index': best_index, 'left': best_left, 'right': best_right}, new_feature_indices
 
 def build_tree(dataset, max_depth, min_size, feature_indices):
-	root = get_split(dataset, feature_indices)
-	split(root, max_depth, min_size, feature_indices, 1)
+	root, new_feature_indices = get_split(dataset, feature_indices)
+	split(root, max_depth, min_size, new_feature_indices, 1)
 	return root
 
 def split(node, max_depth, min_size, feature_indices, depth):
@@ -66,24 +69,24 @@ def split(node, max_depth, min_size, feature_indices, depth):
 		node['right'] = to_terminal(right)
 		return
 	
-	if left.shape[0] <= min_size or len(feature_indices) == 0:
+	if left.shape[0] <= min_size or len(feature_indices) <= 1:
 		node['left'] = to_terminal(left)
 	else:
-		node['left'] = get_split(left, feature_indices)
-		split(node['left'], max_depth, min_size, feature_indices, depth + 1)
+		node['left'], new_feature_indices= get_split(left, feature_indices)
+		split(node['left'], max_depth, min_size, new_feature_indices, depth + 1)
 
-	if right.shape[0] <= min_size or len(feature_indices) == 0:
+	if right.shape[0] <= min_size or len(feature_indices) <= 1:
 		node['right'] = to_terminal(right)
 	else:
-		node['right'] = get_split(right, feature_indices)
-		split(node['right'], max_depth, min_size, feature_indices, depth + 1)
+		node['right'], new_feature_indices= get_split(right, feature_indices)
+		split(node['right'], max_depth, min_size, new_feature_indices, depth + 1)
 
 def to_terminal(group):
 	count_0s = np.sum(group[:, -1] == 0)
 	count_1s = np.sum(group[:, -1] == 1)
 
 	# if count_1s / (count_0s + count_1s) > 0.37:			# experimentally measured best threshold from train100.csv
-	if count_1s / (count_0s + count_1s) > 0.30:
+	if count_1s / (count_0s + count_1s) > 0.37:
 		return 1
 	else:
 		return 0
