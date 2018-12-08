@@ -10,6 +10,8 @@ from random_forest import DecisionTree, RandomForest
 from measures import get_accuracy, get_f1_score
 
 from sk_random_forest import Sk_RandomForest		# TESTING
+from tutorial_random_forest import Tut_RandomForest		# TESTING
+
 
 
 def init_model(model_type, delta, area_width):
@@ -22,6 +24,9 @@ def init_model(model_type, delta, area_width):
 
 	elif model_type == 'SKRF':		# TESTING
 		return Sk_RandomForest(delta)
+	elif model_type == 'TutRF':		# TESTING
+		return Tut_RandomForest(delta)
+
 
 	else:
 		raise SolverException('Invalid model type: ' + Fore.MAGENTA + model_type + Fore.RESET)
@@ -48,6 +53,8 @@ class Solver:
 
 		elif model_type == 'SKRF':		# TESTING
 			self.__half_stride = 3
+		elif model_type == 'TutRF':		# TESTING
+			self.__half_stride = 3
 
 		else:
 			raise SolverException('Invalid model type: ' + Fore.MAGENTA + model_type + Fore.RESET)
@@ -67,12 +74,12 @@ class Solver:
 		print('X shape = ', X.shape)
 		print('Y shape = ', Y.shape)
 
-		row_limit = int(X.shape[0] * 0.1)
+		# row_limit = int(X.shape[0] * 0.1)
 
-		X = X[ :row_limit, : ]
-		Y = Y[ :row_limit, : ]
-		print('X shape = ', X.shape)
-		print('Y shape = ', Y.shape)
+		# X = X[ :row_limit, : ]
+		# Y = Y[ :row_limit, : ]
+		# print('X shape = ', X.shape)
+		# print('Y shape = ', Y.shape)
 
 
 		if self.__IS_MP:

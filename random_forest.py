@@ -81,7 +81,13 @@ def split(node, max_depth, min_size, feature_indices, depth):
 def to_terminal(group):
 	count_0s = np.sum(group[:, -1] == 0)
 	count_1s = np.sum(group[:, -1] == 1)
-	return 1 if count_1s > count_0s else 0
+
+	if count_1s / (count_0s + count_1s) > 0.37:			# experimentally measured best threshold
+		return 1
+	else:
+		return 0
+
+	# return 1 if count_1s > count_0s else 0
 
 def get_prediction_from_tree(row, node):
 	if row[node['index']] == 0:
@@ -118,31 +124,33 @@ class RandomForest:
 	def __init__(self, delta):
 		self.__delta = delta
 
-	def __bootstrap_dataset(self, dataset):
-		dataset_1s = (dataset[ :, -1 ] == 1).reshape(-1, dataset.shape[1])
-		dataset_0s = (dataset[ :, -1 ] == 0).reshape(-1, dataset.shape[1])
+	# def __bootstrap_dataset(self, dataset):
+	# 	dataset_1s = (dataset[ :, -1 ] == 1).reshape(-1, dataset.shape[1])
+	# 	dataset_0s = (dataset[ :, -1 ] == 0).reshape(-1, dataset.shape[1])
 
 
 
-		# print('__bootstrap_dataset()')
-		# print('dataset shape = ', dataset.shape)
-		# print('dataset_1s.shape = ', dataset_1s.shape)
-		# print('dataset_0s.shape = ', dataset_0s.shape)
+	# 	# print('__bootstrap_dataset()')
+	# 	# print('dataset shape = ', dataset.shape)
+	# 	# print('dataset_1s.shape = ', dataset_1s.shape)
+	# 	# print('dataset_0s.shape = ', dataset_0s.shape)
 
-		# dataset_0s = dataset_0s[ :dataset_1s.shape[0] ]
+	# 	# dataset_0s = dataset_0s[ :dataset_1s.shape[0] ]
 
-		selected_dataset = np.r_[ dataset_0s, dataset_1s, dataset_1s, dataset_1s, dataset_1s, dataset_1s ]
+	# 	# selected_dataset = np.r_[ dataset_0s, dataset_1s, dataset_1s, dataset_1s, dataset_1s, dataset_1s ]
+	# 	selected_dataset = np.r_[ dataset_0s, dataset_1s ]
 
-		# print('selected_dataset shape = ', selected_dataset.shape)
+	# 	# print('selected_dataset shape = ', selected_dataset.shape)
 
-		return selected_dataset
+	# 	return selected_dataset
 
 
 	def fit(self, X_train, Y_train, X_cv, Y_cv):
 		dataset_train = np.c_[ X_train, Y_train ]
+
 		# print('dataset_train shape = ', dataset_train.shape)
 
-		dataset_train = self.__bootstrap_dataset(dataset_train)
+		# dataset_train = self.__bootstrap_dataset(dataset_train)
 		# print('dataset_train shape = ', dataset_train.shape)
 
 		self.__trees = []
@@ -207,9 +215,9 @@ class RandomForest:
 		np.random.shuffle(sample_indices)
 		sample_indices = sample_indices[ :int(self.__SAMPLE_RATIO * sample_indices.shape[0]) ]
 		dataset_sample = dataset[ sample_indices ]
+
 		# select random feature indices
 		feature_indices = list(range(dataset.shape[1] - 1))
-		# feature_indices = np.arange(dataset.shape[1] - 1)
 		np.random.shuffle(feature_indices)
 		feature_indices = feature_indices[ :self.__N_FEATURES ]
 		return build_tree(dataset_sample, self.__MAX_DEPTH, self.__MIN_SIZE, feature_indices)
