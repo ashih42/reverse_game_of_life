@@ -74,12 +74,12 @@ class Solver:
 		print('X shape = ', X.shape)
 		print('Y shape = ', Y.shape)
 
-		row_limit = int(X.shape[0] * 0.1)
+		# row_limit = int(X.shape[0] * 0.1)
 
-		X = X[ :row_limit, : ]
-		Y = Y[ :row_limit, : ]
-		print('X shape = ', X.shape)
-		print('Y shape = ', Y.shape)
+		# X = X[ :row_limit, : ]
+		# Y = Y[ :row_limit, : ]
+		# print('X shape = ', X.shape)
+		# print('Y shape = ', Y.shape)
 
 
 		if self.__IS_MP:

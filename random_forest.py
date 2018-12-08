@@ -25,12 +25,19 @@ def test_split(dataset, index):
 	right = dataset[ dataset[:, index] == 1 ]
 	return left, right
 
-def get_split(dataset, feature_indices):
+def generate_feature_indices(dataset, n_features):
+	feature_indices = list(range(dataset.shape[1] - 1))
+	np.random.shuffle(feature_indices)
+	feature_indices = feature_indices[ :n_features ]
+	return feature_indices
+
+def get_split(dataset, n_features):
 	class_values = [0, 1]
 	best_index = None
 	best_score = float('inf')
 	best_left = None
 	best_right = None
+	feature_indices = generate_feature_indices(dataset, n_features)
 	for index in feature_indices:
 		left, right = test_split(dataset, index)
 		gini_index = get_gini_index(left, right, class_values)
@@ -39,20 +46,16 @@ def get_split(dataset, feature_indices):
 			best_score = gini_index
 			best_left = left
 			best_right = right
-	print('best index = ', best_index)
-	print('feature_indices = ', feature_indices)
-	
-	new_feature_indices = feature_indices.copy()
-	new_feature_indices.remove(best_index)
-	
-	return {'index': best_index, 'left': best_left, 'right': best_right}, new_feature_indices
+	# print('best index: ', best_index, ' in feature_indices: ', feature_indices)
+	return {'index': best_index, 'left': best_left, 'right': best_right}
 
-def build_tree(dataset, max_depth, min_size, feature_indices):
-	root, new_feature_indices = get_split(dataset, feature_indices)
-	split(root, max_depth, min_size, new_feature_indices, 1)
+def build_tree(dataset, max_depth, min_size, n_features):
+	root = get_split(dataset, n_features)
+	# print('root = ', root)
+	split(root, max_depth, min_size, n_features, 1)
 	return root
 
-def split(node, max_depth, min_size, feature_indices, depth):
+def split(node, max_depth, min_size, n_features, depth):
 	left = node['left']
 	right = node['right']
 	del(node['left'])
@@ -69,29 +72,22 @@ def split(node, max_depth, min_size, feature_indices, depth):
 		node['right'] = to_terminal(right)
 		return
 	
-	if left.shape[0] <= min_size or len(feature_indices) == 0:
+	if left.shape[0] <= min_size:
 		node['left'] = to_terminal(left)
 	else:
-		node['left'], new_feature_indices= get_split(left, feature_indices)
-		split(node['left'], max_depth, min_size, new_feature_indices, depth + 1)
+		node['left'] = get_split(left, n_features)
+		split(node['left'], max_depth, min_size, n_features, depth + 1)
 
-	if right.shape[0] <= min_size or len(feature_indices) == 0:
+	if right.shape[0] <= min_size:
 		node['right'] = to_terminal(right)
 	else:
-		node['right'], new_feature_indices= get_split(right, feature_indices)
-		split(node['right'], max_depth, min_size, new_feature_indices, depth + 1)
+		node['right'] = get_split(right, n_features)
+		split(node['right'], max_depth, min_size, n_features, depth + 1)
 
 def to_terminal(group):
 	count_0s = np.sum(group[:, -1] == 0)
 	count_1s = np.sum(group[:, -1] == 1)
-
-	# if count_1s / (count_0s + count_1s) > 0.37:			# experimentally measured best threshold from train100.csv
-	if count_1s / (count_0s + count_1s) > 0.37:
-		return 1
-	else:
-		return 0
-
-	# return 1 if count_1s > count_0s else 0
+	return 1 if count_1s > count_0s else 0
 
 def get_prediction_from_tree(row, node):
 	if row[node['index']] == 0:
@@ -119,7 +115,7 @@ class RandomForest:
 	__MIN_SIZE = 2
 	__SAMPLE_RATIO = 1
 	__N_FEATURES = 7
-	__N_TREES = 10
+	__N_TREES = 100
 	__PARAM_DIRECTORY = 'RF_Param/'
 
 	__IS_CV = os.getenv('RGOL_CV') == 'TRUE'
@@ -128,34 +124,9 @@ class RandomForest:
 	def __init__(self, delta):
 		self.__delta = delta
 
-	# def __bootstrap_dataset(self, dataset):
-	# 	dataset_1s = (dataset[ :, -1 ] == 1).reshape(-1, dataset.shape[1])
-	# 	dataset_0s = (dataset[ :, -1 ] == 0).reshape(-1, dataset.shape[1])
-
-
-
-	# 	# print('__bootstrap_dataset()')
-	# 	# print('dataset shape = ', dataset.shape)
-	# 	# print('dataset_1s.shape = ', dataset_1s.shape)
-	# 	# print('dataset_0s.shape = ', dataset_0s.shape)
-
-	# 	# dataset_0s = dataset_0s[ :dataset_1s.shape[0] ]
-
-	# 	# selected_dataset = np.r_[ dataset_0s, dataset_1s, dataset_1s, dataset_1s, dataset_1s, dataset_1s ]
-	# 	selected_dataset = np.r_[ dataset_0s, dataset_1s ]
-
-	# 	# print('selected_dataset shape = ', selected_dataset.shape)
-
-	# 	return selected_dataset
-
 
 	def fit(self, X_train, Y_train, X_cv, Y_cv):
 		dataset_train = np.c_[ X_train, Y_train ]
-
-		# print('dataset_train shape = ', dataset_train.shape)
-
-		# dataset_train = self.__bootstrap_dataset(dataset_train)
-		# print('dataset_train shape = ', dataset_train.shape)
 
 		self.__trees = []
 		tree_id = 0
@@ -165,13 +136,9 @@ class RandomForest:
 			self.__write_parameters_to_file(tree, tree_id)
 			
 			print('tree_id = ', tree_id)
-			print_tree(tree)
 
-
-
+			# print_tree(tree)
 			tree_id += 1
-
-
 
 		if self.__IS_VERBOSE:
 			self.__measure_performance(X_train, Y_train, X_cv, Y_cv)
@@ -220,11 +187,7 @@ class RandomForest:
 		sample_indices = sample_indices[ :int(self.__SAMPLE_RATIO * sample_indices.shape[0]) ]
 		dataset_sample = dataset[ sample_indices ]
 
-		# select random feature indices
-		feature_indices = list(range(dataset.shape[1] - 1))
-		np.random.shuffle(feature_indices)
-		feature_indices = feature_indices[ :self.__N_FEATURES ]
-		return build_tree(dataset_sample, self.__MAX_DEPTH, self.__MIN_SIZE, feature_indices)
+		return build_tree(dataset_sample, self.__MAX_DEPTH, self.__MIN_SIZE, self.__N_FEATURES)
 
 	def predict(self, X):
 		sum_predictions = np.zeros((X.shape[0], 1))
@@ -236,7 +199,6 @@ class RandomForest:
 			# sum_predictions += self.__get_predictions_from_tree(X, tree)
 		
 		return (sum_predictions >= self.__N_TREES / 2).astype(int)
-		# return sum_predictions.astype(bool).astype(int)
 
 	# def __get_predictions_from_tree(self, X, tree):
 	# 	predictions = np.empty((X.shape[0], 1))
@@ -257,8 +219,8 @@ class DecisionTree:
 
 	def fit(self, X_train, Y_train, X_cv, Y_cv):
 		dataset_train = np.c_[ X_train, Y_train ]
-		feature_indices = list(range(X_train.shape[1] - 1))
-		self.__root = build_tree(dataset_train, self.__MAX_DEPTH, self.__MIN_SIZE, feature_indices)
+		n_features = X_train.shape[1] - 1
+		self.__root = build_tree(dataset_train, self.__MAX_DEPTH, self.__MIN_SIZE, n_features)
 
 		print('self.__root = ')
 		print_tree(self.__root)
