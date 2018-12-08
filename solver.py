@@ -9,6 +9,27 @@ from logistic_regression import LogisticRegression
 from random_forest import DecisionTree, RandomForest
 from measures import get_accuracy, get_f1_score
 
+from sk_random_forest import Sk_RandomForest		# TESTING
+
+
+def init_model(model_type, delta, area_width):
+	if model_type == 'LR':
+		return LogisticRegression(delta, area_width)
+	elif model_type == 'DT':
+		return DecisionTree(delta)
+	elif model_type == 'RF':
+		return RandomForest(delta)
+
+	elif model_type == 'SKRF':		# TESTING
+		return Sk_RandomForest(delta)
+
+	else:
+		raise SolverException('Invalid model type: ' + Fore.MAGENTA + model_type + Fore.RESET)
+
+
+
+
+
 class Solver:
 	np.random.seed(42)
 	__DELTA_RANGE = 5
@@ -21,9 +42,13 @@ class Solver:
 		if model_type == 'LR':
 			self.__half_stride = 5
 		elif model_type == 'DT':
-			self.__half_stride = 3
+			self.__half_stride = 5
 		elif model_type == 'RF':
 			self.__half_stride = 3
+
+		elif model_type == 'SKRF':		# TESTING
+			self.__half_stride = 3
+
 		else:
 			raise SolverException('Invalid model type: ' + Fore.MAGENTA + model_type + Fore.RESET)
 		area_width = self.__half_stride * 2 + 1
@@ -38,6 +63,18 @@ class Solver:
 
 	def train(self, filename):
 		X, Y = process_data_file(filename, self.__half_stride, is_training_data=True)
+
+		print('X shape = ', X.shape)
+		print('Y shape = ', Y.shape)
+
+		row_limit = int(X.shape[0] * 0.1)
+
+		X = X[ :row_limit, : ]
+		Y = Y[ :row_limit, : ]
+		print('X shape = ', X.shape)
+		print('Y shape = ', Y.shape)
+
+
 		if self.__IS_MP:
 			self.__train_mp(X, Y)
 		else:
@@ -111,15 +148,7 @@ class Solver:
 		predictions = predictions.reshape(-1, 400)
 		write_predictions_to_file(predictions)
 
-def init_model(model_type, delta, area_width):
-	if model_type == 'LR':
-		return LogisticRegression(delta, area_width)
-	elif model_type == 'DT':
-		return DecisionTree(delta)
-	elif model_type == 'RF':
-		return RandomForest(delta)
-	else:
-		raise SolverException('Invalid model type: ' + Fore.MAGENTA + model_type + Fore.RESET)
+
 
 def generate_train_cv_sets(X, Y, percent_train=0.7):
 	split_index = int(X.shape[0] * percent_train)
