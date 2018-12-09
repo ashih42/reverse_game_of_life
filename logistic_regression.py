@@ -38,7 +38,6 @@ class LogisticRegression:
 
 	def load_param(self):
 		param_filename = self.__PARAM_DIRECTORY + 'param_%d.dat' % self.__delta
-		# print('Loading model parameters in ' + Fore.BLUE + param_filename + Fore.RESET)
 		parser = MatrixDataParser(param_filename, num_rows=self.__NUM_FEATURES, num_cols=self.__NUM_LABELS)
 		self.__Theta = np.array(parser.data, dtype = float)
 
@@ -203,13 +202,3 @@ class LogisticRegression:
 		print('Writing model parameters in ' + Fore.BLUE + filename + Fore.RESET)
 		with open(filename, 'wb') as file:
 			np.savetxt(file, self.__Theta, delimiter=',')
-
-	
-
-
-
-
-
-
-
-

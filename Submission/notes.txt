@@ -1,0 +1,9 @@
+Input: 7x7 area
+
+RandomForest
+  100 trees
+  sqrt n_features
+  10 max_depth
+  2 min_leaf
+
+(12 hours to train and predict)
