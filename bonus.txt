@@ -1,5 +1,7 @@
 Bonus:
 
+- Very noice presentation: https://docs.google.com/presentation/d/1AWeghT_EnCwOBYbK7sFx-vJ1xOBCPzxUDKLGn8BK21o
+
 - Authentic Game of Life simulator!
 
 - So many models to choose from:
@@ -13,11 +15,13 @@ Bonus:
 
 - Optional cross-validation!
 
-- (Logistic Regression) Mini-batch gradient descent!
+- Even more optional graph saving!
 
 - Meaningful performance measurements:
   - Accuracy
   - F1 Score
+
+- (Logistic Regression) Mini-batch gradient descent!
 
 - Superbly formatted logs!
 
@@ -26,5 +30,3 @@ Bonus:
 - Phat-ass UML diagram!
 
 - Robust error-handling!
-
-- Well-prepared presentation!
