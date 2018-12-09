@@ -2,7 +2,7 @@ Bonus:
 
 - Authentic Game of Life simulator!
 
-- Select 3 different models at run-time!
+- So many models to choose from:
   - Logistic Regression
   - Decision Tree
   - Random Forest
@@ -15,13 +15,16 @@ Bonus:
 
 - (Logistic Regression) Mini-batch gradient descent!
 
-- Meaningful performance measurements!
+- Meaningful performance measurements:
+  - Accuracy
+  - F1 Score
 
 - Superbly formatted logs!
 
 - Beautiful plots!
 
-- Robust error-handling!
-
 - Phat-ass UML diagram!
 
+- Robust error-handling!
+
+- Well-prepared presentation!

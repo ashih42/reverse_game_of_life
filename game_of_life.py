@@ -32,28 +32,6 @@ class GameOfLife():
             end = self.__board_size - start
             self.__board[start:end, start:end] = board.copy()
             self.__border_size = border_size
-        self.start = self.__border_size
-        self.end = self.__board_size - self.start
-
-    def __count_alive_neighbors(self, x, y):
-        alive_neighbors = 0
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                if i == j == 0:
-                    continue
-                neighbor_x = x + i
-                neighbor_y = y + j
-                if self.__is_valid_position(neighbor_x, neighbor_y):
-                    alive_neighbors += self.__board[neighbor_x][neighbor_y]
-        return alive_neighbors
-
-    def __is_valid_position(self, x, y):
-        return 0 <= x < self.__board_size and 0 <= y < self.__board_size
-
-    def __get_limited_board(self):
-        start = self.__border_size
-        end = self.__board_size - start
-        return self.__board[start:end, start:end]
 
     def run(self, visual=False, delta=-1):
         starting_board = self.__get_limited_board().copy()
@@ -70,10 +48,29 @@ class GameOfLife():
             self.__img = 0
             for i in range(delta):
                 self.__update(i, display=False)
-        
         end_board = self.__get_limited_board().copy()
         return starting_board, end_board
-        
+
+    def __is_valid_position(self, x, y):
+        return 0 <= x < self.__board_size and 0 <= y < self.__board_size
+
+    def __count_alive_neighbors(self, x, y):
+        alive_neighbors = 0
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                if i == j == 0:
+                    continue
+                neighbor_x = x + i
+                neighbor_y = y + j
+                if self.__is_valid_position(neighbor_x, neighbor_y):
+                    alive_neighbors += self.__board[neighbor_x][neighbor_y]
+        return alive_neighbors
+
+    def __get_limited_board(self):
+        start = self.__border_size
+        end = self.__board_size - start
+        return self.__board[start:end, start:end]
+
     def __update(self, frame, display=True):
         next_board = self.__board.copy()
         for i in range(self.__board_size):

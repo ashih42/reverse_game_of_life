@@ -1,5 +1,4 @@
 from colorama import Fore, Back, Style
-import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import os
@@ -32,7 +31,7 @@ def generate_feature_indices(dataset, n_features):
 	return feature_indices
 
 def get_split(dataset, n_features):
-	class_values = [0, 1]
+	class_values = (0, 1)
 	best_index = None
 	best_score = float('inf')
 	best_left = None
@@ -46,12 +45,10 @@ def get_split(dataset, n_features):
 			best_score = gini_index
 			best_left = left
 			best_right = right
-	# print('best index: ', best_index, ' in feature_indices: ', feature_indices)
 	return {'index': best_index, 'left': best_left, 'right': best_right}
 
 def build_tree(dataset, max_depth, min_size, n_features):
 	root = get_split(dataset, n_features)
-	# print('root = ', root)
 	split(root, max_depth, min_size, n_features, 1)
 	return root
 
@@ -103,19 +100,18 @@ def get_prediction_from_tree(row, node):
 
 def print_tree(node, depth=0):
 	if isinstance(node, dict):
-		print('%s[split on feature: %d]' % ((' ' * depth, node['index'])))
-		print_tree(node['left'], depth+1)
-		print_tree(node['right'], depth+1)
+		print('%s[split on feature: %d]' % (('  ' * depth, node['index'])))
+		print_tree(node['left'], depth + 1)
+		print_tree(node['right'], depth + 1)
 	else:
-		print('%s[predict: %s]' % ((' ' * depth, node)))
-
+		color = Fore.GREEN if node == 1 else Fore.RED
+		print(color + '%s[predict: %s]' % (('  ' * depth, node)) + Fore.RESET)
 
 class RandomForest:
 	__MAX_DEPTH = 10
 	__MIN_SIZE = 2
 	__SAMPLE_RATIO = 1
-	__N_FEATURES = 7
-	__N_TREES = 100
+	__N_TREES = 10
 	__PARAM_DIRECTORY = 'RF_Param/'
 
 	__IS_CV = os.getenv('RGOL_CV') == 'TRUE'
@@ -124,24 +120,53 @@ class RandomForest:
 	def __init__(self, delta):
 		self.__delta = delta
 
-
 	def fit(self, X_train, Y_train, X_cv, Y_cv):
 		dataset_train = np.c_[ X_train, Y_train ]
-
+		n_features = int(np.sqrt(X_train.shape[1]))
 		self.__trees = []
 		tree_id = 0
 		for tree in range(self.__N_TREES):
-			tree = self.__build_tree(dataset_train)
+			print(Style.BRIGHT + Fore.BLUE + 'Building tree %d' % tree_id + Style.RESET_ALL + Fore.RESET)
+			tree = build_tree(self.__get_sample(dataset_train), self.__MAX_DEPTH, self.__MIN_SIZE, n_features)
 			self.__trees.append(tree)
+			if self.__IS_VERBOSE:
+				print_tree(tree)
 			self.__write_parameters_to_file(tree, tree_id)
-			
-			print('tree_id = ', tree_id)
-
-			# print_tree(tree)
 			tree_id += 1
-
 		if self.__IS_VERBOSE:
 			self.__measure_performance(X_train, Y_train, X_cv, Y_cv)
+
+	def __get_sample(self, dataset):
+		sample_indices = np.arange(dataset.shape[0])
+		np.random.shuffle(sample_indices)
+		sample_indices = sample_indices[ :int(self.__SAMPLE_RATIO * sample_indices.shape[0]) ]
+		return dataset[ sample_indices ]
+
+	def __measure_performance(self, X_train, Y_train, X_cv, Y_cv):
+		predictions_train = self.predict(X_train)
+		print(Fore.BLUE + 'Training:         ' + Fore.RESET +
+			'Delta = %d: Accuracy = %.6f, F1 Score = %.6f' % (
+			self.__delta,
+			get_accuracy(predictions_train, Y_train),
+			get_f1_score(predictions_train, Y_train)))
+		if self.__IS_CV:
+			predictions_cv = self.predict(X_cv)
+			accuracy_cv = get_accuracy(predictions_cv, Y_cv)
+			f1_score_cv = get_f1_score(predictions_cv, Y_cv)
+			print(Fore.GREEN + 'Cross Validation: ' + Fore.RESET +
+				'Delta = %d: Accuracy = %.6f, F1 Score = %.6f' % (
+				self.__delta,
+				get_accuracy(predictions_cv, Y_cv),
+				get_f1_score(predictions_cv, Y_cv)))
+
+	def predict(self, X):
+		sum_predictions = np.zeros((X.shape[0], 1))
+		tree_id = 0
+		for tree in self.__trees:
+			print('Getting predictions from tree %d' % tree_id)
+			tree_id += 1
+			sum_predictions += np.apply_along_axis(get_prediction_from_tree, 1, X, tree).reshape(-1, 1)
+		return (sum_predictions >= self.__N_TREES / 2).astype(int)
 
 	def load_param(self):
 		self.__trees = []
@@ -163,49 +188,6 @@ class RandomForest:
 		with open(filename, 'wb') as file:
 			pickle.dump(tree, file)
 
-	def __measure_performance(self, X_train, Y_train, X_cv, Y_cv):
-		predictions_train = self.predict(X_train)
-		print(Fore.BLUE + 'Training:         ' + Fore.RESET +
-			'Delta = %d: Accuracy = %.6f, F1 Score = %.6f' % (
-			self.__delta,
-			get_accuracy(predictions_train, Y_train),
-			get_f1_score(predictions_train, Y_train)))
-		if self.__IS_CV:
-			predictions_cv = self.predict(X_cv)
-			accuracy_cv = get_accuracy(predictions_cv, Y_cv)
-			f1_score_cv = get_f1_score(predictions_cv, Y_cv)
-			print(Fore.GREEN + 'Cross Validation: ' + Fore.RESET +
-				'Delta = %d: Accuracy = %.6f, F1 Score = %.6f' % (
-				self.__delta,
-				get_accuracy(predictions_cv, Y_cv),
-				get_f1_score(predictions_cv, Y_cv)))
-
-	def __build_tree(self, dataset):
-		# select random sample subset from dataset
-		sample_indices = np.arange(dataset.shape[0])
-		np.random.shuffle(sample_indices)
-		sample_indices = sample_indices[ :int(self.__SAMPLE_RATIO * sample_indices.shape[0]) ]
-		dataset_sample = dataset[ sample_indices ]
-
-		return build_tree(dataset_sample, self.__MAX_DEPTH, self.__MIN_SIZE, self.__N_FEATURES)
-
-	def predict(self, X):
-		sum_predictions = np.zeros((X.shape[0], 1))
-		tree_id = 0
-		for tree in self.__trees:
-			print('RandomForest.predict(): tree_id = ', tree_id)
-			tree_id += 1
-			sum_predictions += np.apply_along_axis(get_prediction_from_tree, 1, X, tree).reshape(-1, 1)
-			# sum_predictions += self.__get_predictions_from_tree(X, tree)
-		
-		return (sum_predictions >= self.__N_TREES / 2).astype(int)
-
-	# def __get_predictions_from_tree(self, X, tree):
-	# 	predictions = np.empty((X.shape[0], 1))
-	# 	for i in range(X.shape[0]):
-	# 		predictions[i] = get_prediction_from_tree(X[i], tree)
-	# 	return predictions
-
 class DecisionTree:
 	__MAX_DEPTH = 5
 	__MIN_SIZE = 10
@@ -221,13 +203,10 @@ class DecisionTree:
 		dataset_train = np.c_[ X_train, Y_train ]
 		n_features = X_train.shape[1] - 1
 		self.__root = build_tree(dataset_train, self.__MAX_DEPTH, self.__MIN_SIZE, n_features)
-
-		print('self.__root = ')
-		print_tree(self.__root)
-
-		self.__write_parameters_to_file()
 		if self.__IS_VERBOSE:
+			print_tree(self.__root)
 			self.__measure_performance(X_train, Y_train, X_cv, Y_cv)
+		self.__write_parameters_to_file()
 
 	def __measure_performance(self, X_train, Y_train, X_cv, Y_cv):
 		predictions_train = self.predict(X_train)
@@ -264,20 +243,3 @@ class DecisionTree:
 		print('Writing model parameters in ' + Fore.BLUE + filename + Fore.RESET)
 		with open(filename, 'wb') as file:
 			pickle.dump(self.__root, file)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

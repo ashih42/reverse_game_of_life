@@ -9,8 +9,8 @@ from logistic_regression import LogisticRegression
 from random_forest import DecisionTree, RandomForest
 from measures import get_accuracy, get_f1_score
 
-from sk_random_forest import Sk_RandomForest		# TESTING
-from tutorial_random_forest import Tut_RandomForest		# TESTING
+# from sk_random_forest import Sk_RandomForest		# TESTING
+# from tutorial_random_forest import Tut_RandomForest		# TESTING
 
 
 
@@ -22,10 +22,10 @@ def init_model(model_type, delta, area_width):
 	elif model_type == 'RF':
 		return RandomForest(delta)
 
-	elif model_type == 'SKRF':		# TESTING
-		return Sk_RandomForest(delta)
-	elif model_type == 'TutRF':		# TESTING
-		return Tut_RandomForest(delta)
+	# elif model_type == 'SKRF':		# TESTING
+	# 	return Sk_RandomForest(delta)
+	# elif model_type == 'TutRF':		# TESTING
+	# 	return Tut_RandomForest(delta)
 
 
 	else:
@@ -45,16 +45,16 @@ class Solver:
 
 	def __init__(self, model_type):
 		if model_type == 'LR':
-			self.__half_stride = 5
+			self.__half_stride = 3
 		elif model_type == 'DT':
-			self.__half_stride = 5
+			self.__half_stride = 3
 		elif model_type == 'RF':
 			self.__half_stride = 3
 
-		elif model_type == 'SKRF':		# TESTING
-			self.__half_stride = 3
-		elif model_type == 'TutRF':		# TESTING
-			self.__half_stride = 3
+		# elif model_type == 'SKRF':		# TESTING
+		# 	self.__half_stride = 3
+		# elif model_type == 'TutRF':		# TESTING
+		# 	self.__half_stride = 3
 
 		else:
 			raise SolverException('Invalid model type: ' + Fore.MAGENTA + model_type + Fore.RESET)
@@ -92,7 +92,7 @@ class Solver:
 	def __train_sp(self, X, Y):
 		for i in range(self.__DELTA_RANGE):
 			delta = i + 1
-			print('Training model for delta = ', delta)
+			print(Style.BRIGHT + 'Training model for delta = %d' % delta + Style.RESET_ALL)
 			row_indices = X[:, 0] == delta
 			X_delta_i = X[ row_indices, 1: ]
 			Y_delta_i = Y[ row_indices, ]
@@ -109,7 +109,7 @@ class Solver:
 		processes = []
 		for i in range(self.__DELTA_RANGE):
 			delta = i + 1
-			print('Training model for delta = ', delta)
+			print(Style.BRIGHT + 'Training model for delta = %d' % delta + Style.RESET_ALL)
 			processes.append(Process(target=train_process, args=(X, Y, delta, self.__models[i], self.__IS_CV)))
 		for p in processes:
 			p.start()
@@ -120,21 +120,23 @@ class Solver:
 		predictions = self.__get_predictions(X)
 		accuracy = get_accuracy(predictions, Y)
 		f1_score = get_f1_score(predictions, Y)
-		print(Style.BRIGHT + 'Performance on entire dataset: ' +Style.RESET_ALL +
+		print(Style.BRIGHT + 'Performance on entire training dataset: ' +Style.RESET_ALL +
 			'Accuracy = %.6f, F1 Score = %.6f' % (accuracy, f1_score))
 
-	def __get_predictions(self, X):
-		predictions = np.empty((X.shape[0], 1))
+	def predict(self, filename):
+		X_test, _ = process_data_file(filename, self.__half_stride, is_training_data=False)
+		predictions = np.empty((X_test.shape[0], 1))
 		if self.__IS_MP:
-			self.__get_predictions_mp(X, predictions)
+			self.__get_predictions_mp(X_test, predictions)
 		else:
-			self.__get_predictions_sp(X, predictions)
-		return predictions
+			self.__get_predictions_sp(X_test, predictions)
+		predictions = predictions.reshape(-1, 400)
+		write_predictions_to_file(predictions)
 
 	def __get_predictions_sp(self, X, predictions):
 		for i in range(self.__DELTA_RANGE):
 			delta = i + 1
-			print('Predicting where delta = ', delta)
+			print(Style.BRIGHT + 'Predicting where delta = %d' % delta + Style.RESET_ALL)
 			row_indices = X[:, 0] == delta
 			predictions[ row_indices ] = self.__models[i].predict( X[ row_indices, 1: ] )
 
@@ -142,18 +144,14 @@ class Solver:
 		processes = []
 		for i in range(self.__DELTA_RANGE):
 			delta = i + 1
-			print('Predicting where delta = ', delta)
+			print(Style.BRIGHT + 'Predicting where delta = %d' % delta + Style.RESET_ALL)
 			processes.append(Process(target=predict_process, args=(X, predictions, delta, self.__models[i])))
 		for p in processes:
 			p.start()
 		for p in processes:
 			p.join()
 
-	def predict(self, filename):
-		X_test, _ = process_data_file(filename, self.__half_stride, is_training_data=False)
-		predictions = self.__get_predictions(X_test)
-		predictions = predictions.reshape(-1, 400)
-		write_predictions_to_file(predictions)
+	
 
 
 

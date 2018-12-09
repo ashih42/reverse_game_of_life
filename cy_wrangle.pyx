@@ -1,8 +1,10 @@
 #cython: language_level=3
 #cython: boundscheck=False, wraparound=False, nonecheck=False
 
-from data_parser import DataParser
+from colorama import Fore, Back, Style
 import numpy as np
+
+from data_parser import DataParser
 
 cpdef process_data_file(filename, half_stride, is_training_data):
 	parser = DataParser(filename, is_training_data)
@@ -30,20 +32,18 @@ cdef clamp(int x, int low, int high):
 	return max(0, min(x, high))
 
 cpdef format_X(X, half_stride):
+	print(Style.BRIGHT + 'Formatting data...' + Style.RESET_ALL)
 	
 	area_width = half_stride * 2 + 1
-
 	X_new = np.empty((400 * X.shape[0], area_width ** 2 + 1))
-
 	percentile = 10
 
 	for i in range(X.shape[0]):
 		if i == (X.shape[0] // 100 * percentile):
-			print('format_X() %d percent...' % percentile)
+			print('%d%% ...' % percentile)
 			percentile += 10
 
 		delta = X[i, 0]
-
 		board = X[i, 1:].reshape((20, 20))
 		board = np.c_[ np.zeros((20, half_stride)), board, np.zeros((20, half_stride))]
 		board = np.r_[ np.zeros((half_stride, 20 + half_stride * 2)), board, np.zeros((half_stride, 20 + half_stride * 2))]
@@ -61,7 +61,5 @@ cpdef format_X(X, half_stride):
 
 		X_new[i*400:(i+1)*400, 0] = delta
 
-	print('format_X() complete!')
-
+	print('complete!')
 	return X_new
-
