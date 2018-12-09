@@ -119,13 +119,17 @@ class Solver:
 
 	def predict(self, filename):
 		X_test, _ = process_data_file(filename, self.__half_stride, is_training_data=False)
-		predictions = np.empty((X_test.shape[0], 1))
-		if self.__IS_MP:
-			self.__get_predictions_mp(X_test, predictions)
-		else:
-			self.__get_predictions_sp(X_test, predictions)
+		predictions = self.__get_predictions(X_test)
 		predictions = predictions.reshape(-1, 400)
 		write_predictions_to_file(predictions)
+
+	def __get_predictions(self, X):
+		predictions = np.empty((X.shape[0], 1))
+		if self.__IS_MP:
+			self.__get_predictions_mp(X, predictions)
+		else:
+			self.__get_predictions_sp(X, predictions)
+		return predictions
 
 	def __get_predictions_sp(self, X, predictions):
 		for i in range(self.__DELTA_RANGE):
