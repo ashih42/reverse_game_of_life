@@ -1,9 +1,17 @@
-Input: 7x7 area
+score_0.12833.csv
+	Input: 7x7 area
+	RandomForest
+		100 trees
+		sqrt n_features
+		10 max_depth
+		2 min_leaf
+	(12 hours to train and predict)
 
-RandomForest
-  100 trees
-  sqrt n_features
-  10 max_depth
-  2 min_leaf
-
-(12 hours to train and predict)
+score_0.12092.csv
+	Input: 7x7 area
+	RandomForest
+		32 trees
+		sqrt n_features
+		2^32 max_depth
+		2 min_leaf
+	(24 hours to train and predict)
