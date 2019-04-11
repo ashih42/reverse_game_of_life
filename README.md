@@ -17,6 +17,9 @@ See our [powerpoint presentation](https://docs.google.com/presentation/d/1AWeghT
   * `LR` Logistic Regression.
   * `DT` Decision Tree.
   * `RF` Random Forest.
+* We compare model performances in cross-validation:
+  * Accuracy.
+  * [F1 score](https://en.wikipedia.org/wiki/F1_score).
 
 ## Prerequisites
 
