@@ -5,12 +5,10 @@
 *.so
 *.html
 *.avi
-*.pdf
+__pycache__
+build
 LR_Plots
 LR_Param
 RF_Param
 DT_Param
-__pycache__
-build
-stash
 submission.csv
