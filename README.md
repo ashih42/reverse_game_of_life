@@ -1,5 +1,5 @@
 # reverse_game_of_life
-Predict the state of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) a few turns ago by implementing [logistic regression](https://en.wikipedia.org/wiki/Logistic_regression), [decision tree](https://en.wikipedia.org/wiki/Decision_tree), and [random forest](https://en.wikipedia.org/wiki/Random_forest) models in Python. (42 Silicon Valley)
+Predict the state of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) a few turns ago by implementing [Logistic Regression](https://en.wikipedia.org/wiki/Logistic_regression), [Decision Tree](https://en.wikipedia.org/wiki/Decision_tree), and [Random Forest](https://en.wikipedia.org/wiki/Random_forest) models in Python. (42 Silicon Valley)
 
 ## The Problem
 
